@@ -73,5 +73,7 @@ Interacción visual dinámica entre frontend y backend
 
 # Autores
 Alison Lita - https://github.com/alison2704
+
 Evelin Rocha - https://github.com/EveRocha11
+
 Génesis Vásconez - https://github.com/GenesisDaena
