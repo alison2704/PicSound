@@ -1,0 +1,83 @@
+# ==============================================
+# LOGS Y ARCHIVOS TEMPORALES
+# ==============================================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================================
+# DEPENDENCIAS
+# ==============================================
+node_modules/
+backend/node_modules/
+
+# ==============================================
+# COMPILADOS Y BUILD OUTPUTS
+# ==============================================
+dist/
+dist-ssr/
+out/
+build/
+.tmp/
+.cache/
+coverage/
+
+# ==============================================
+# CONFIGURACIÓN LOCAL
+# ==============================================
+*.local
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# ==============================================
+# ARCHIVOS DE SISTEMA / EDITORES
+# ==============================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ==============================================
+# HERRAMIENTAS DE DESARROLLO (opcional)
+# ==============================================
+*.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# ==============================================
+# TESTS Y COBERTURA
+# ==============================================
+coverage/
+*.lcov
+jest-html-reporters-*
+
+# ==============================================
+# ESPECÍFICO DEL PROYECTO
+# ==============================================
+# Archivos de subida o multimedia locales
+uploads/
+media/
+storage/
+
+# ==============================================
+# BACKEND (Express + SQL Server)
+# ==============================================
+backend/.env
+backend/temp/
+backend/uploads/
+backend/coverage/
+backend/*.log
