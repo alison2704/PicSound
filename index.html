@@ -1,13 +1,81 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="./src/login.css">
+  <title>PicSound</title>
+</head>
+
+<body>
+  <div class="container" id="container">
+    <!-- Formulario de Registro -->
+    <div class="form-container sign-up">
+      <form action="/register" method="POST">
+        <h1>Crear Cuenta</h1>
+        <div class="social-icons">
+          <a href="#" class="icon"><i class="fa-brands fa-google-plus-g"></i></a>
+          <a href="#" class="icon"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="#" class="icon"><i class="fa-brands fa-github"></i></a>
+          <a href="#" class="icon"><i class="fa-brands fa-linkedin-in"></i></a>
+        </div>
+        <span>Por favor, ingrese su usuario, correo y contraseña para registrarse</span>
+        <input type="text" name="username" placeholder="Nombre de Usuario" required>
+        <input type="email" name="email" placeholder="Correo Electrónico" required>
+        <input type="password" name="password" placeholder="Contraseña" required>
+        <div id="error-message" style="color: red; display: none;">Ingrese un email válido con uno de los
+          siguientes dominios: outlook, gmail, hotmail</div>
+        <button type="submit">INICIAR SESIÓN</button>
+      </form>
+    </div>
+
+    <!-- Formulario de Login -->
+    <div class="form-container sign-in">
+      <form action="/login" method="POST">
+        <h1>Iniciar Sesión</h1>
+        <div class="social-icons">
+          <a href="#" class="icon"><i class="fa-brands fa-google-plus-g"></i></a>
+          <a href="#" class="icon"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="#" class="icon"><i class="fa-brands fa-github"></i></a>
+          <a href="#" class="icon"><i class="fa-brands fa-linkedin-in"></i></a>
+        </div>
+        <span>Ingresa tu usuario y contraseña</span>
+        <input type="text" name="username" placeholder="Nombre de Usuario" required>
+        <input type="password" name="password" placeholder="Contraseña" required>
+        <a href="#">¿Olvidaste tu contraseña?</a>
+        <button type="submit">INICIAR SESIÓN</button>
+      </form>
+    </div>
+
+    <div class="toggle-container">
+      <div class="toggle">
+        <div class="toggle-panel toggle-left">
+          <h1>¡Bienvenido de nuevo!</h1>
+          <p>El espacio donde tus fotos cobran vida con música</p>
+          <button class="hidden" id="login">REGRESAR</button>
+        </div>
+        <div class="toggle-panel toggle-right">
+          <h1>¡Bienvenidos a PicSound!</h1>
+          <p>Regístrese con sus datos personales para vivir una experiencia única e interactuar con otros
+            usuarios</p>
+          <button class="hidden" id="register">REGISTRARSE</button>
+          <button class="hidden" id="solo-ver">SOLO VER</button><!--boton para usuario sin registro-->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para mostrar mensajes emergentes -->
+  <div id="error-modal" style="display: none;">
+    <div id="modal-content">
+      <p id="modal-message"></p>
+      <button id="close-modal">Cerrar</button>
+    </div>
+  </div>
+
+  <script src="src/main.js"></script>
+</body>
+
 </html>
