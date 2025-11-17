@@ -133,7 +133,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (soloVerBtn) {
         soloVerBtn.addEventListener("click", () => {
-            window.location.href = "/home.html"; // <-- redirección
+            window.location.href = "/soloVer.html"; // <-- redirección
         });
     }
 });
+
+// ----------------------------------------------------
+// MANEJO DEL BOTO inicio-sesion
+// ----------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+    const inicioSesionBtn = document.getElementById("inicio-sesion");
+    if (inicioSesionBtn) {
+        inicioSesionBtn.addEventListener("click", () => {
+            window.location.href = "/inicio.html"; // <-- redirección
+        });
+    }
+});
+

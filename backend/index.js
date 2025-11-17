@@ -96,7 +96,7 @@ app.post('/login', async (req, res) => {
             res.status(200).json({
                 success: true,
                 message: 'Inicio de sesión exitoso.',
-                redirect: 'http://localhost:4000/home.html'
+                redirect: 'http://localhost:4000/index.html'
             });
         } else {
             // si la contraseña es incorrecta
