@@ -124,3 +124,16 @@ loginForm.addEventListener('submit', async (event) => {
     showModal('Error al intentar iniciar sesión. Por favor, intente más tarde.');
   }
 });
+
+// ----------------------------------------------------
+// manejo del boton solo ver
+// ----------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+    const soloVerBtn = document.getElementById("solo-ver");
+
+    if (soloVerBtn) {
+        soloVerBtn.addEventListener("click", () => {
+            window.location.href = "/home.html"; // <-- redirección
+        });
+    }
+});
