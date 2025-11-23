@@ -14,6 +14,8 @@ BEGIN
     IF OBJECT_ID('dbo.Likes',      'U') IS NOT NULL DROP TABLE dbo.Likes;
     IF OBJECT_ID('dbo.ImageSongs', 'U') IS NOT NULL DROP TABLE dbo.ImageSongs;
     IF OBJECT_ID('dbo.Images',     'U') IS NOT NULL DROP TABLE dbo.Images;
+    IF OBJECT_ID('dbo.Categories',  'U') IS NOT NULL DROP TABLE dbo.Categories;
+    -- NUEVO
     IF OBJECT_ID('dbo.Songs',      'U') IS NOT NULL DROP TABLE dbo.Songs;
     IF OBJECT_ID('dbo.Users',      'U') IS NOT NULL DROP TABLE dbo.Users;
     IF OBJECT_ID('dbo.Roles',      'U') IS NOT NULL DROP TABLE dbo.Roles;
@@ -47,6 +49,26 @@ VALUES
 GO
 
 ---------------------------------------------------------------
+--NUEVA Tabla Categories
+---------------------------------------------------------------
+CREATE TABLE Categories
+(
+    CategoryID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL UNIQUE
+);
+-- Insertar las categorías que usas en index.html
+INSERT INTO Categories
+    (Name)
+VALUES
+    ('Paisajes'),
+    ('Moda'),
+    ('Viajes'),
+    ('Urbana'),
+    ('Minimalista'),
+    ('Naturaleza');
+GO
+
+---------------------------------------------------------------
 -- 4️ Tabla Users
 ---------------------------------------------------------------
 CREATE TABLE Users
@@ -67,6 +89,8 @@ CREATE TABLE Images
 (
     ImageID INT IDENTITY(1,1) PRIMARY KEY,
     UserID INT NOT NULL REFERENCES Users(UserID) ON DELETE CASCADE,
+    CategoryID INT NOT NULL REFERENCES Categories(CategoryID),
+    -- NUEVO CAMPO
     Title NVARCHAR(250) NULL,
     Description NVARCHAR(MAX) NULL,
     ImageURL NVARCHAR(500) NOT NULL,
@@ -154,7 +178,7 @@ BEGIN
         (
             'admin',
             'admin@picsound.com',
-            '$2a$10$i2D4k5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0A1B2C3D4E5F6G7H8I9J0K1L2M3N4',
+            '$2a$10$kOIRU1Lb1Q0k44FtmGjgAey.VMsUy0DDYfzECF6O.IeIH9ll620Hi',
             2
     );
 END
@@ -198,3 +222,4 @@ GO
 /*===============================================================
   FIN DEL SCRIPT
 ===============================================================*/
+

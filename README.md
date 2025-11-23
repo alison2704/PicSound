@@ -53,8 +53,8 @@ node index.js
 
 ### Si todo está correcto, deberías ver en consola:
 ```
-Conectado a SQL Server
-Servidor corriendo en http://localhost:4000
+✅ Conectado a SQL Server
+🚀 Servidor corriendo en http://localhost:4000
 ```
 
 # Funcionalidades principales
@@ -69,6 +69,33 @@ Likes, comentarios y votos por canción
 Roles: usuario, administrador y visitante (solo lectura)
 
 Interacción visual dinámica entre frontend y backend
+
+# Manejo de Usuarios
+
+El sistema implementa tres tipos de usuarios: **administrador**, **usuario registrado** y **usuario no registrado**.
+
+### Usuario no registrado
+Al ingresar a la aplicación, este usuario únicamente puede visualizar el **dashboard principal**.  
+No tiene permisos para interactuar con el contenido, por lo que **no puede dar “like” ni votar por las canciones**, ni acceder a funcionalidades adicionales.
+
+### Usuario registrado
+Este usuario puede **iniciar sesión** y navegar libremente por el **feed**.  
+Tiene habilitadas todas las funciones de interacción: reaccionar al contenido, votar y participar dentro de la plataforma.
+
+### Administrador
+El administrador (credenciales por defecto: **usuario:** `admin` – **contraseña:** `admin123*`) tiene acceso a un **Panel de Administración** que incluye:
+
+- **Estadísticas Generales**
+  - Número de usuarios registrados  
+  - Cantidad de imágenes subidas  
+  - Total de likes generados  
+- **Listado de Usuarios**
+  - Visualización del contenido publicado por cada usuario  
+  - Reacciones asociadas a dicho contenido  
+- **Navegación completa del feed**
+- **Acceso a su perfil de administrador**
+
+
 
 
 # Autores

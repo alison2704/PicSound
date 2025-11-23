@@ -171,27 +171,27 @@ app.put('/api/profile/update', authenticateToken, async (req, res) => {
         // Si se quiere cambiar la contraseña, verificar la contraseña actual
         if (newPassword) {
             if (!currentPassword) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Debes proporcionar tu contraseña actual para cambiarla.' 
+                return res.status(400).json({
+                    success: false,
+                    message: 'Debes proporcionar tu contraseña actual para cambiarla.'
                 });
             }
 
             // Verificar que la contraseña actual sea correcta
             const isPasswordValid = await bcrypt.compare(currentPassword, currentUser.PasswordHash);
-            
+
             if (!isPasswordValid) {
-                return res.status(401).json({ 
-                    success: false, 
-                    message: 'La contraseña actual es incorrecta.' 
+                return res.status(401).json({
+                    success: false,
+                    message: 'La contraseña actual es incorrecta.'
                 });
             }
 
             // Validar longitud de nueva contraseña
             if (newPassword.length < 6) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'La nueva contraseña debe tener al menos 6 caracteres.' 
+                return res.status(400).json({
+                    success: false,
+                    message: 'La nueva contraseña debe tener al menos 6 caracteres.'
                 });
             }
 
@@ -213,9 +213,9 @@ app.put('/api/profile/update', authenticateToken, async (req, res) => {
                     WHERE UserID = @userId;
                 `);
 
-            return res.status(200).json({ 
-                success: true, 
-                message: 'Perfil y contraseña actualizados correctamente.' 
+            return res.status(200).json({
+                success: true,
+                message: 'Perfil y contraseña actualizados correctamente.'
             });
 
         } else {
@@ -231,26 +231,26 @@ app.put('/api/profile/update', authenticateToken, async (req, res) => {
                     WHERE UserID = @userId;
                 `);
 
-            return res.status(200).json({ 
-                success: true, 
-                message: 'Perfil actualizado correctamente.' 
+            return res.status(200).json({
+                success: true,
+                message: 'Perfil actualizado correctamente.'
             });
         }
 
     } catch (err) {
         console.error('Error al actualizar perfil:', err);
-        
+
         // Manejo de errores de duplicados
         if (err.number === 2627 || err.message.includes('UNIQUE KEY constraint')) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'El correo electrónico ya está registrado por otro usuario.' 
+            return res.status(400).json({
+                success: false,
+                message: 'El correo electrónico ya está registrado por otro usuario.'
             });
         }
 
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Error interno del servidor al actualizar el perfil.' 
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor al actualizar el perfil.'
         });
     }
 });
@@ -270,7 +270,7 @@ app.get('/api/admin/dashboard', authenticateToken, async (req, res) => {
         const pool = await poolPromise;
 
         // 2. Obtener estadísticas clave (Contadores simples)
-        const usersCount = await pool.request().query('SELECT COUNT(UserID) AS TotalUsers FROM Users');
+        const usersCount = await pool.request().query('SELECT COUNT(UserID) AS TotalUsers FROM Users WHERE RoleID = 1');
         stats.totalUsers = usersCount.recordset[0].TotalUsers;
 
         const imagesCount = await pool.request().query('SELECT COUNT(ImageID) AS TotalImages FROM Images');
@@ -290,7 +290,7 @@ app.get('/api/admin/dashboard', authenticateToken, async (req, res) => {
             FROM Users U
             LEFT JOIN Images I ON U.UserID = I.UserID
             LEFT JOIN Likes L ON I.ImageID = L.ImageID
-            
+            WHERE U.RoleID = 1
             GROUP BY U.UserID, U.Username, U.Email
             ORDER BY U.UserID DESC;
         `);
@@ -310,13 +310,81 @@ app.get('/api/admin/dashboard', authenticateToken, async (req, res) => {
     }
 });
 
-
 // Ruta para servir el index.html por defecto
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 
-module.exports = app;
+// ---------------------------------------------------------------------
+// RUTA: /api/images/:categoryId (FEED DINÁMICO - O4H8)
+// ---------------------------------------------------------------------
+app.get('/api/images/:categoryId', async (req, res) => {
+    const categoryId = req.params.categoryId;
 
+    // Validar que el ID sea numérico para evitar inyecciones SQL
+    if (isNaN(parseInt(categoryId))) {
+        return res.status(400).json({ success: false, message: 'ID de categoría inválido.' });
+    }
+
+    try {
+        const pool = await poolPromise;
+
+        // CONSULTA FINAL: Obtener imágenes de la categoría especificada con contadores y canciones.
+        const imagesResult = await pool.request()
+            .input('categoryId', sql.Int, categoryId) // Usamos el ID para filtrar
+            .query(`
+                SELECT 
+                    I.ImageID,
+                    I.Title,
+                    I.Description,
+                    I.ImageURL,
+                    U.Username AS UploaderUsername,
+                    
+                    -- Contar Likes para cada imagen (usando subconsulta simple)
+                    (SELECT COUNT(LikeID) FROM Likes WHERE ImageID = I.ImageID) AS LikesCount,
+                    
+                    -- Agregar detalles de las canciones y votos (JSON FOR PATH)
+                    (
+                        SELECT 
+                            S.SongID, 
+                            S.Title AS SongTitle, 
+                            S.ExternalURL,
+                            ISNULL(V.VoteCount, 0) AS VoteCount
+                        FROM ImageSongs ISG
+                        JOIN Songs S ON ISG.SongID = S.SongID
+                        LEFT JOIN (
+                            SELECT SongID, COUNT(SongVoteID) AS VoteCount
+                            FROM SongVotes
+                            GROUP BY SongID
+                        ) AS V ON S.SongID = V.SongID
+                        WHERE ISG.ImageID = I.ImageID
+                        FOR JSON PATH
+                    ) AS SongsData
+                FROM Images I
+                JOIN Users U ON I.UserID = U.UserID
+                WHERE I.CategoryID = @categoryId  -- <<-- FILTRO CRUCIAL
+                ORDER BY I.CreatedAt DESC;
+            `);
+
+        // Mapear y parsear los resultados
+        const images = imagesResult.recordset.map(img => ({
+            ImageID: img.ImageID,
+            Title: img.Title,
+            Description: img.Description,
+            ImageURL: img.ImageURL,
+            UploaderUsername: img.UploaderUsername,
+            LikesCount: img.LikesCount,
+            Songs: img.SongsData ? JSON.parse(img.SongsData) : []
+        }));
+
+        res.json(images);
+
+    } catch (err) {
+        console.error(`Error FATAL al obtener feed de categoría ${categoryId}:`, err);
+        res.status(500).json({ success: false, message: 'Error interno del servidor al cargar el feed.' });
+    }
+})
+
+module.exports = app;
 app.listen(PORT, () => console.log(`Backend corriendo en http://localhost:${PORT}`));
