@@ -145,6 +145,116 @@ app.get('/api/profile/me', authenticateToken, async (req, res) => {
     }
 });
 
+// RUTA PROTEGIDA: /api/profile/update - Actualizar Perfil de Usuario
+app.put('/api/profile/update', authenticateToken, async (req, res) => {
+    const { username, email, currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    if (!username || !email) {
+        return res.status(400).json({ success: false, message: 'El nombre de usuario y el email son obligatorios.' });
+    }
+
+    try {
+        const pool = await poolPromise;
+
+        // Obtener datos actuales del usuario
+        const userResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .query(`SELECT Username, Email, PasswordHash FROM Users WHERE UserID = @userId;`);
+
+        if (!userResult.recordset.length) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+        }
+
+        const currentUser = userResult.recordset[0];
+
+        // Si se quiere cambiar la contraseña, verificar la contraseña actual
+        if (newPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Debes proporcionar tu contraseña actual para cambiarla.' 
+                });
+            }
+
+            // Verificar que la contraseña actual sea correcta
+            const isPasswordValid = await bcrypt.compare(currentPassword, currentUser.PasswordHash);
+            
+            if (!isPasswordValid) {
+                return res.status(401).json({ 
+                    success: false, 
+                    message: 'La contraseña actual es incorrecta.' 
+                });
+            }
+
+            // Validar longitud de nueva contraseña
+            if (newPassword.length < 6) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'La nueva contraseña debe tener al menos 6 caracteres.' 
+                });
+            }
+
+            // Hash de la nueva contraseña
+            const saltRounds = 10;
+            const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+            // Actualizar con nueva contraseña
+            await pool.request()
+                .input('userId', sql.Int, userId)
+                .input('username', sql.NVarChar(100), username)
+                .input('email', sql.NVarChar(200), email)
+                .input('passwordHash', sql.NVarChar(256), newPasswordHash)
+                .query(`
+                    UPDATE Users 
+                    SET Username = @username, 
+                        Email = @email, 
+                        PasswordHash = @passwordHash 
+                    WHERE UserID = @userId;
+                `);
+
+            return res.status(200).json({ 
+                success: true, 
+                message: 'Perfil y contraseña actualizados correctamente.' 
+            });
+
+        } else {
+            // Solo actualizar username y email (sin cambiar contraseña)
+            await pool.request()
+                .input('userId', sql.Int, userId)
+                .input('username', sql.NVarChar(100), username)
+                .input('email', sql.NVarChar(200), email)
+                .query(`
+                    UPDATE Users 
+                    SET Username = @username, 
+                        Email = @email 
+                    WHERE UserID = @userId;
+                `);
+
+            return res.status(200).json({ 
+                success: true, 
+                message: 'Perfil actualizado correctamente.' 
+            });
+        }
+
+    } catch (err) {
+        console.error('Error al actualizar perfil:', err);
+        
+        // Manejo de errores de duplicados
+        if (err.number === 2627 || err.message.includes('UNIQUE KEY constraint')) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'El correo electrónico ya está registrado por otro usuario.' 
+            });
+        }
+
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor al actualizar el perfil.' 
+        });
+    }
+});
+
 
 // RUTA PROTEGIDA: /api/admin/dashboard (O12H2 y O15H11) - Dashboard de Admin
 app.get('/api/admin/dashboard', authenticateToken, async (req, res) => {
