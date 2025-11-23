@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+     
+    <meta charset="UTF-8">
+     
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <title>Perfil de Usuario - PicSound</title>
+    <link rel="stylesheet" href="src/perfil.css">
+</head>
+
+<body>
+      <header>
+            <nav>
+                  <p class="logo">PICSOUND</p>
+                  <a href="index.html">Inicio</a>
+                  <a href="#" id="logout-perfil">Cerrar sesión</a>
+                </nav>
+          </header>
+     
+      <main>
+            <section class="profile-container">
+                  <h1>Mi Perfil</h1>
+                  <div class="profile-info">
+                        <p><strong>Nombre:</strong> <span id="username">Cargando...</span></p>
+                        <p><strong>Correo Electrónico:</strong> <span id="email">Cargando...</span></p>
+                        <p><strong>Miembro Desde:</strong> <span id="created-at">Cargando...</span></p>
+                      </div>
+                  <section class="user-images">
+                        <h2>Imágenes subidas</h2>
+                        <div id="imagesContainer" class="image-grid"></div>
+                      </section>
+                </section>
+          </main>
+
+     
+    <script>
+        const API_URL = 'http://localhost:4000';
+        const jwtToken = localStorage.getItem('jwtToken');
+
+        // Función para manejar el cierre de sesión (copiada de src/app.js)
+        document.getElementById('logout-perfil').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm("¿Estás seguro de que quieres cerrar la sesión?")) {
+                localStorage.removeItem('jwtToken');
+                window.location.href = 'index.html';
+            }
+        });
+
+        // LÓGICA DINÁMICA DE CARGA DEL PERFIL
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!jwtToken) {
+                alert("Acceso denegado. Inicie sesión.");
+                // C54: Intento de acceder al perfil sin iniciar sesión
+                return window.location.href = 'login_register.html';
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/profile/me`, {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` } // Enviamos el JWT
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    // Token expirado o inválido
+                    throw new Error('Sesión expirada. Inicie sesión de nuevo.');
+                }
+                if (!response.ok) throw new Error('Error al cargar datos del perfil.');
+
+                const data = await response.json();
+                const user = data.user;
+
+                // 1. Mostrar información del usuario (Dinámico)
+                document.getElementById('username').textContent = user.Username;
+                document.getElementById('email').textContent = user.Email;
+
+                // Formatear la fecha
+                const date = new Date(user.CreatedAt).toLocaleDateString();
+                document.getElementById('created-at').textContent = date;
+
+                // 2. Mostrar imágenes subidas (Dinámico)
+                const imagesContainer = document.getElementById('imagesContainer');
+                if (data.images && data.images.length > 0) {
+                    data.images.forEach(image => {
+                        const imgElement = document.createElement('img');
+                        imgElement.src = image.ImageUrl; // Usamos ImageUrl de la BD
+                        imgElement.alt = image.Title;
+                        // Aquí puedes añadir más detalles o hacer la imagen clickeable si lo necesitas
+                        imagesContainer.appendChild(imgElement);
+                    });
+                } else {
+                    imagesContainer.innerHTML = '<p>No has subido imágenes aún. ¡Es hora de compartir!</p>';
+                }
+
+            } catch (error) {
+                console.error('Error al cargar el perfil:', error);
+                document.getElementById('username').textContent = 'Error';
+                document.getElementById('email').textContent = 'Error de conexión con API.';
+                // FIX: También debes actualizar este elemento
+                document.getElementById('created-at').textContent = 'Error de conexión.';
+            }
+        });
+    </script>
+</body>
+
+</html>

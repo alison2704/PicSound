@@ -1,24 +1,44 @@
-﻿---------------------------------------------------------------
--- CREACIÓN COMPLETA DE LA BASE DE DATOS PICSOUNDDB (CORREGIDA)
--- Evita errores de "multiple cascade paths"
--- Solo enlaces externos (no archivos)
----------------------------------------------------------------
+﻿/*===============================================================
+  PICSOUNDDB - SCRIPT COMPLETO CORREGIDO Y REEJECUTABLE
+===============================================================*/
 
--- 1️ Crear la base de datos
+---------------------------------------------------------------
+-- 1️  BORRAR TABLAS SI EXISTEN (ORDEN CORRECTO)
+---------------------------------------------------------------
+IF DB_ID('PicsoundDB') IS NOT NULL
+BEGIN
+    USE PicsoundDB;
+
+    IF OBJECT_ID('dbo.SongVotes',  'U') IS NOT NULL DROP TABLE dbo.SongVotes;
+    IF OBJECT_ID('dbo.Comments',   'U') IS NOT NULL DROP TABLE dbo.Comments;
+    IF OBJECT_ID('dbo.Likes',      'U') IS NOT NULL DROP TABLE dbo.Likes;
+    IF OBJECT_ID('dbo.ImageSongs', 'U') IS NOT NULL DROP TABLE dbo.ImageSongs;
+    IF OBJECT_ID('dbo.Images',     'U') IS NOT NULL DROP TABLE dbo.Images;
+    IF OBJECT_ID('dbo.Songs',      'U') IS NOT NULL DROP TABLE dbo.Songs;
+    IF OBJECT_ID('dbo.Users',      'U') IS NOT NULL DROP TABLE dbo.Users;
+    IF OBJECT_ID('dbo.Roles',      'U') IS NOT NULL DROP TABLE dbo.Roles;
+END
+GO
+
+---------------------------------------------------------------
+-- 2️ CREAR BD SI NO EXISTE
+---------------------------------------------------------------
 IF DB_ID('PicsoundDB') IS NULL
     CREATE DATABASE PicsoundDB;
 GO
+
 USE PicsoundDB;
 GO
 
 ---------------------------------------------------------------
--- 2️ Tabla Roles
+-- 3️ Tabla Roles
 ---------------------------------------------------------------
 CREATE TABLE Roles
 (
     RoleID INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(50) NOT NULL UNIQUE
 );
+
 INSERT INTO Roles
     (Name)
 VALUES
@@ -27,7 +47,7 @@ VALUES
 GO
 
 ---------------------------------------------------------------
--- 3️ Tabla Users
+-- 4️ Tabla Users
 ---------------------------------------------------------------
 CREATE TABLE Users
 (
@@ -41,7 +61,7 @@ CREATE TABLE Users
 GO
 
 ---------------------------------------------------------------
--- 4️ Tabla Images (fotos)
+-- 5️ Tabla Images
 ---------------------------------------------------------------
 CREATE TABLE Images
 (
@@ -49,25 +69,25 @@ CREATE TABLE Images
     UserID INT NOT NULL REFERENCES Users(UserID) ON DELETE CASCADE,
     Title NVARCHAR(250) NULL,
     Description NVARCHAR(MAX) NULL,
-    ImageUrl NVARCHAR(500) NOT NULL,
+    ImageURL NVARCHAR(500) NOT NULL,
     CreatedAt DATETIME2 DEFAULT SYSUTCDATETIME()
 );
 GO
 
 ---------------------------------------------------------------
--- 5️ Tabla Songs (solo enlaces)
+-- 6️ Tabla Songs
 ---------------------------------------------------------------
 CREATE TABLE Songs
 (
     SongID INT IDENTITY(1,1) PRIMARY KEY,
     Title NVARCHAR(250) NOT NULL,
-    ExternalUrl NVARCHAR(500) NOT NULL,
+    ExternalURL NVARCHAR(500) NOT NULL,
     CreatedAt DATETIME2 DEFAULT SYSUTCDATETIME()
 );
 GO
 
 ---------------------------------------------------------------
--- 6️ Tabla ImageSongs (asocia hasta 3 canciones por imagen)
+-- 7️ Tabla ImageSongs (hasta 3 canciones por imagen)
 ---------------------------------------------------------------
 CREATE TABLE ImageSongs
 (
@@ -81,8 +101,8 @@ CREATE TABLE ImageSongs
 GO
 
 ---------------------------------------------------------------
--- 7️ Tabla Likes (relación Usuario - Imagen)
--- ❗ ON DELETE NO ACTION en ImageID para evitar múltiples cascadas
+-- 8️ Tabla Likes
+-- (NO ACTION en ImageID para evitar múltiples cascadas)
 ---------------------------------------------------------------
 CREATE TABLE Likes
 (
@@ -95,8 +115,7 @@ CREATE TABLE Likes
 GO
 
 ---------------------------------------------------------------
--- 8️ Tabla Comments (comentarios)
--- ❗ ON DELETE NO ACTION en ImageID para evitar múltiples cascadas
+-- 9️ Tabla Comments
 ---------------------------------------------------------------
 CREATE TABLE Comments
 (
@@ -109,8 +128,7 @@ CREATE TABLE Comments
 GO
 
 ---------------------------------------------------------------
--- 9️ Tabla SongVotes (votos de canciones)
--- ❗ ON DELETE NO ACTION en ImageID para evitar múltiples cascadas
+-- 10️ Tabla SongVotes (CORRECTA)
 ---------------------------------------------------------------
 CREATE TABLE SongVotes
 (
@@ -124,21 +142,59 @@ CREATE TABLE SongVotes
 GO
 
 ---------------------------------------------------------------
--- 10️ Datos iniciales
+-- 11️ Insertar admin SOLO si no existe
 ---------------------------------------------------------------
-INSERT INTO Users
-    (Username, Email, PasswordHash, RoleID)
-VALUES
-    ('admin', 'admin@picsound.com', 'HASH_ADMIN_TEMP', 2);
+IF NOT EXISTS (SELECT 1
+FROM Users
+WHERE Email = 'admin@picsound.com')
+BEGIN
+    INSERT INTO Users
+        (Username, Email, PasswordHash, RoleID)
+    VALUES
+        (
+            'admin',
+            'admin@picsound.com',
+            '$2a$10$i2D4k5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0A1B2C3D4E5F6G7H8I9J0K1L2M3N4',
+            2
+    );
+END
 GO
 
 ---------------------------------------------------------------
---  FIN DEL SCRIPT CORREGIDO
+-- 12️ Crear LOGIN solo si NO existe
 ---------------------------------------------------------------
-
-
-CREATE LOGIN picsound_user WITH PASSWORD = 'Picsound123*';
+IF NOT EXISTS (SELECT 1
+FROM sys.server_principals
+WHERE name = 'picsound_user')
+    CREATE LOGIN picsound_user WITH PASSWORD = 'Picsound123*';
 GO
+
 USE PicsoundDB;
-CREATE USER picsound_user FOR LOGIN picsound_user;
-ALTER ROLE db_owner ADD MEMBER picsound_user;
+GO
+
+---------------------------------------------------------------
+-- 13️ Crear USER solo si NO existe
+---------------------------------------------------------------
+IF NOT EXISTS (SELECT 1
+FROM sys.database_principals
+WHERE name = 'picsound_user')
+    CREATE USER picsound_user FOR LOGIN picsound_user;
+GO
+
+---------------------------------------------------------------
+-- 14️ Agregar rol si no existe
+---------------------------------------------------------------
+IF NOT EXISTS (
+    SELECT 1
+FROM sys.database_role_members drm
+    JOIN sys.database_principals dp ON drm.member_principal_id = dp.principal_id
+    JOIN sys.database_principals rp ON drm.role_principal_id = rp.principal_id
+WHERE dp.name = 'picsound_user'
+    AND rp.name = 'db_owner'
+)
+    ALTER ROLE db_owner ADD MEMBER picsound_user;
+GO
+
+/*===============================================================
+  FIN DEL SCRIPT
+===============================================================*/

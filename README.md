@@ -53,8 +53,8 @@ node index.js
 
 ### Si todo está correcto, deberías ver en consola:
 ```
-✅ Conectado a SQL Server
-🚀 Servidor corriendo en http://localhost:4000
+Conectado a SQL Server
+Servidor corriendo en http://localhost:4000
 ```
 
 # Funcionalidades principales

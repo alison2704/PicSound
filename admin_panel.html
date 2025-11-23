@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - PicSound</title>
+    <!-- Enlace a los estilos separados -->
+    <link rel="stylesheet" href="">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <header>
+        <nav>
+            <p class="logo">PICSOUND ADMIN</p>
+            <div>
+                <a href="index.html" style="color: white; text-decoration: none;">Inicio</a>
+                <a href="#" id="logout-admin" style="color: #ff9800; text-decoration: none;">Cerrar Sesión</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="dashboard-container">
+        <h1>Panel de Administración</h1>
+
+        <!-- Sección de Estadísticas (Módulos O15H11) -->
+        <section>
+            <h2>Estadísticas Generales</h2>
+            <div id="stats-container" class="stats-grid">
+                <p>Cargando estadísticas...</p>
+            </div>
+        </section>
+
+        <!-- Sección de Listado de Usuarios (Módulos O12H2) -->
+        <section>
+            <h2>Listado de Usuarios y Contenido</h2>
+            <table id="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Email</th>
+                        <th>Fotos Subidas</th>
+                        <th>Likes Recibidos</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                    <tr>
+                        <td colspan="5">Cargando datos de usuarios...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="src/app.js"></script>
+    <script>
+        const API_URL = 'http://localhost:4000';
+        const jwtToken = localStorage.getItem('jwtToken');
+
+        // Lógica de Cerrar Sesión (Reutiliza app.js)
+        document.getElementById('logout-admin').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm("¿Estás seguro de que quieres cerrar la sesión?")) {
+                localStorage.removeItem('jwtToken');
+                window.location.href = 'index.html';
+            }
+        });
+
+        // LÓGICA DINÁMICA DE CARGA DEL DASHBOARD
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!jwtToken) {
+                alert("Acceso denegado. Inicie sesión.");
+                return window.location.href = 'login_register.html';
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
+                });
+
+                if (response.status === 403) {
+                    alert("Acceso prohibido. No tienes permisos de administrador.");
+                    return window.location.href = 'index.html';
+                }
+                if (!response.ok) throw new Error('Error al cargar el Dashboard.');
+
+                const data = await response.json();
+
+                // 1. Renderizar Estadísticas
+                renderStats(data.stats);
+
+                // 2. Renderizar Tabla de Usuarios
+                renderUsersTable(data.usersList);
+
+            } catch (error) {
+                console.error('Error al cargar el dashboard:', error);
+                document.getElementById('stats-container').innerHTML = '<p style="color: red;">No se pudo cargar el dashboard. Verifique el servidor.</p>';
+                document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" style="color: red;">Error de conexión.</td></tr>';
+            }
+        });
+
+        function renderStats(stats) {
+            const container = document.getElementById('stats-container');
+            container.innerHTML = `
+                <div class="stat-card">
+                    <h2>${stats.totalUsers}</h2>
+                    <p>Usuarios Registrados</p>
+                </div>
+                <div class="stat-card">
+                    <h2>${stats.totalImages}</h2>
+                    <p>Imágenes Subidas</p>
+                </div>
+                <div class="stat-card">
+                    <h2>${stats.totalLikes}</h2>
+                    <p>Total de Likes</p>
+                </div>
+            `;
+        }
+
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No hay usuarios registrados.</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = user.UserID;
+                row.insertCell().textContent = user.Username;
+                row.insertCell().textContent = user.Email;
+                row.insertCell().textContent = user.NumFotos;
+                row.insertCell().textContent = user.LikesRecibidos;
+            });
+        }
+    </script>
+</body>
+
+</html>

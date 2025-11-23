@@ -91,7 +91,6 @@ formRegister.addEventListener('submit', async (event) => {
   }
 });
 
-
 // ----------------------------------------------------
 // manejo completo del login (envío con fetch)
 // ----------------------------------------------------
@@ -101,10 +100,14 @@ loginForm.addEventListener('submit', async (event) => {
   const formData = new FormData(loginForm);
   const loginData = Object.fromEntries(formData.entries());
 
-  // loginData contiene { username, password } según tu HTML
+  // [FIX 3] Validación de campos vacíos en Frontend (C61)
+  if (!loginData.username || !loginData.password) {
+    showModal('Por favor, ingresa tu usuario y contraseña.');
+    return; // Detiene la ejecución, evitando la redirección no deseada
+  }
 
   try {
-    const response = await fetch(`${API_URL}/login`, { // <--- Usa API_URL aquí
+    const response = await fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(loginData),
@@ -113,11 +116,14 @@ loginForm.addEventListener('submit', async (event) => {
     const data = await response.json();
 
     if (response.ok) {
-      // redirigir al usuario si el inicio de sesión fue exitoso
+      // [FIX CLAVE 4] Guardar el token para que app.js sepa que estamos autenticados
+      localStorage.setItem('jwtToken', data.token);
+
+      // Redirigir al index.html
       window.location.href = data.redirect;
     } else {
-      // mostrar modal con mensaje de error (credenciales inválidas)
-      showModal(data.message || 'Credenciales inválidas.'); // usa showModal para consolidar
+      // Muestra error si credenciales son incorrectas (401)
+      showModal(data.message || 'Credenciales inválidas.');
     }
   } catch (error) {
     console.error('Error al intentar iniciar sesión:', error);
@@ -125,28 +131,20 @@ loginForm.addEventListener('submit', async (event) => {
   }
 });
 
-// ----------------------------------------------------
-// manejo del boton solo ver
-// ----------------------------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-    const soloVerBtn = document.getElementById("solo-ver");
-
-    if (soloVerBtn) {
-        soloVerBtn.addEventListener("click", () => {
-            window.location.href = "/soloVer.html"; // <-- redirección
-        });
+// Función para simular la decodificación y obtener el rol/nombre
+function decodeJWT(token) {
+  // ... [Copia la implementación de decodeJWT aquí] ...
+  try {
+    const base64Url = token.split('.')[1];
+    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
     }
-});
-
-// ----------------------------------------------------
-// MANEJO DEL BOTO inicio-sesion
-// ----------------------------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-    const inicioSesionBtn = document.getElementById("inicio-sesion");
-    if (inicioSesionBtn) {
-        inicioSesionBtn.addEventListener("click", () => {
-            window.location.href = "/inicio.html"; // <-- redirección
-        });
-    }
-});
-
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
