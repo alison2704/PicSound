@@ -178,7 +178,7 @@ BEGIN
         (
             'admin',
             'admin@picsound.com',
-            '$2a$10$i2D4k5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0A1B2C3D4E5F6G7H8I9J0K1L2M3N4',
+            '$2b$10$zb74mN/1/A.ljndIE7jksOmV.GG1hd7ELJl1smeUGhc7GBuhXv46q',
             2
     );
 END
