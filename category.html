@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title id="page-title">Cargando Galería...</title>
+    <link rel="stylesheet" href="src/index.css"> <!-- Reusa estilos principales si es necesario -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Estilos temporales para la galería */
+        #gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            margin-top: 60px;
+        }
+
+        #gallery img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav
+            style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #333; color: white; position: fixed; width: 100%; top: 0; z-index: 1000;">
+            <div class="header-left">
+                <a href="index.html" style="color: white; text-decoration: none;">&larr; Categorías</a>
+            </div>
+            <div class="title-center">
+                <h2 id="category-title"></h2>
+            </div>
+            <div class="header-right" id="interaction-buttons">
+                <!-- Botón Subir Contenido y otros botones de interacción -->
+                <button id="upload-btn" class="hidden-by-default">Subir Contenido</button>
+            </div>
+        </nav>
+    </header>
+
+    <div id="gallery">
+        <!-- Las imágenes se cargarán aquí -->
+        <p style="text-align: center;">Cargando contenido...</p>
+    </div>
+
+    <!-- Modal de Subida (Copia la estructura del modal de paisajes/moda aquí) -->
+    <!-- ... [Estructura completa del MODAL DE SUBIDA y MODAL DE ÉXITO] ... -->
+
+
+    <script src="src/app.js"></script>
+    <script src="src/category.js"></script> <!-- Lógica dinámica específica de este feed -->
+</body>
+
+</html>
