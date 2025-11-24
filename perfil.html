@@ -198,21 +198,26 @@
         });        // LÓGICA DINÁMICA DE CARGA DEL PERFIL
         document.addEventListener("DOMContentLoaded", async function () {
             if (!jwtToken) {
-                alert("Acceso denegado. Inicie sesión.");
-                // C54: Intento de acceder al perfil sin iniciar sesión
-                return window.location.href = 'login_register.html';
+                alert("Acceso denegado. Debes iniciar sesión.");
+                localStorage.removeItem('jwtToken');
+                return window.location.href = 'inicio.html';
             }
 
             try {
                 const response = await fetch(`${API_URL}/api/profile/me`, {
-                    headers: { 'Authorization': `Bearer ${jwtToken}` } // Enviamos el JWT
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
 
                 if (response.status === 401 || response.status === 403) {
                     // Token expirado o inválido
-                    throw new Error('Sesión expirada. Inicie sesión de nuevo.');
+                    alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+                    localStorage.removeItem('jwtToken');
+                    return window.location.href = 'inicio.html';
                 }
-                if (!response.ok) throw new Error('Error al cargar datos del perfil.');
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar datos del perfil.');
+                }
 
                 const data = await response.json();
                 const user = data.user;
@@ -223,7 +228,11 @@
                 document.getElementById('email').textContent = user.Email;
 
                 // Formatear la fecha
-                const date = new Date(user.CreatedAt).toLocaleDateString();
+                const date = new Date(user.CreatedAt).toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
                 document.getElementById('created-at').textContent = date;
 
                 // 2. Mostrar imágenes subidas (Dinámico)
@@ -231,9 +240,8 @@
                 if (data.images && data.images.length > 0) {
                     data.images.forEach(image => {
                         const imgElement = document.createElement('img');
-                        imgElement.src = image.ImageUrl; // Usamos ImageUrl de la BD
+                        imgElement.src = image.ImageUrl;
                         imgElement.alt = image.Title;
-                        // Aquí puedes añadir más detalles o hacer la imagen clickeable si lo necesitas
                         imagesContainer.appendChild(imgElement);
                     });
                 } else {
@@ -242,10 +250,9 @@
 
             } catch (error) {
                 console.error('Error al cargar el perfil:', error);
-                document.getElementById('username').textContent = 'Error';
-                document.getElementById('email').textContent = 'Error de conexión con API.';
-                // FIX: También debes actualizar este elemento
-                document.getElementById('created-at').textContent = 'Error de conexión.';
+                alert('Error al cargar el perfil. Tu sesión puede haber expirado. Por favor, inicia sesión nuevamente.');
+                localStorage.removeItem('jwtToken');
+                window.location.href = 'inicio.html';
             }
         });
     </script>

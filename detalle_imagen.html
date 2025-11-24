@@ -8,87 +8,292 @@
     <link rel="stylesheet" href="src/index.css">
     <style>
         body {
-            background-color: #f4f4f4;
-            color: #333;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #ffffff, #b6c0cb, #7a8993);
+            color: #262626;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-y: auto;
         }
 
         .container {
             display: flex;
-            max-width: 1000px;
-            margin: 80px auto;
-            gap: 30px;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            width: 95%;
+            min-height: calc(100vh - 120px);
+            margin: 80px auto 40px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 1px solid rgba(182, 192, 203, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         }
 
         .image-sec {
-            flex: 1.5;
+            flex: 0.95;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            position: relative;
+            padding: 3px;
         }
 
         .image-sec img {
             width: 100%;
+            height: 100%;
+            max-height: 100%;
+            object-fit: contain;
             border-radius: 8px;
         }
 
         .info-sec {
-            flex: 1;
+            flex: 1.05;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            max-width: 480px;
+            min-width: 420px;
+            border-left: 1px solid #dbdbdb;
+        }
+
+        .post-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid #efefef;
+        }
+
+        .post-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+            margin: 0 0 8px 0;
+        }
+
+        .post-header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .post-header .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7a8993 0%, #435e47 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .post-header .username {
+            font-weight: 600;
+            color: #262626;
+            font-size: 14px;
+        }
+
+        .post-header .description {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #262626;
+            margin: 0;
         }
 
         /* Canciones */
+        .songs-section {
+            padding: 22px 32px;
+            border-bottom: 1px solid #efefef;
+        }
+
+        .songs-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #435e47;
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .song-item {
-            background: #eee;
-            padding: 10px;
-            border-radius: 5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .song-item:last-child {
+            border-bottom: none;
+        }
+
+        .song-item strong {
+            color: #262626;
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .btn-vote {
-            background: #333;
+            background: linear-gradient(135deg, #7a8993 0%, #435e47 100%);
             color: white;
             border: none;
-            padding: 5px 10px;
+            padding: 6px 18px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
         .btn-vote:hover {
-            background: #e50914;
+            background: linear-gradient(135deg, #435e47 0%, #7a8993 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
 
         /* Comentarios */
+        .comments-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .comments-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #435e47;
+            padding: 22px 32px 16px;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #efefef;
+        }
+
         .comments-box {
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-            max-height: 300px;
+            flex: 1;
             overflow-y: auto;
+            padding: 20px 32px;
+        }
+
+        .comments-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .comments-box::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .comments-box::-webkit-scrollbar-thumb {
+            background: #b6c0cb;
+            border-radius: 3px;
+        }
+
+        .comments-box::-webkit-scrollbar-thumb:hover {
+            background: #7a8993;
         }
 
         .comment {
-            font-size: 0.9em;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #f0f0f0;
-            padding-bottom: 5px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            line-height: 1.5;
         }
 
-        @media(max-width: 768px) {
+        .comment strong {
+            color: #262626;
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        .comment span {
+            color: #262626;
+        }
+
+        /* Formulario de comentarios */
+        #comment-form {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 22px 32px;
+            border-top: 1px solid #efefef;
+            background: white;
+        }
+
+        #comment-form input[type="text"] {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            padding: 8px 0;
+            background: transparent;
+        }
+
+        #comment-form input[type="text"]::placeholder {
+            color: #8e8e8e;
+        }
+
+        #comment-form button[type="submit"] {
+            background: transparent;
+            color: #7a8993;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        #comment-form button[type="submit"]:hover {
+            color: #435e47;
+        }
+
+        #comment-form button[type="submit"]:disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        @media(max-width: 968px) {
             .container {
                 flex-direction: column;
+                height: auto;
+                margin: 60px 0 0;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+
+            .image-sec {
+                max-height: 500px;
+            }
+
+            .info-sec {
+                max-width: 100%;
+                border-left: none;
+                border-top: 1px solid #dbdbdb;
+            }
+
+            .comments-box {
+                max-height: 300px;
             }
         }
     </style>
 </head>
 
 <body>
-    <nav style="padding: 15px; background: #333; position: fixed; top: 0; width: 100%;">
-        <a href="javascript:history.back()" style="color: white; text-decoration: none; font-weight: bold;">&larr;
-            Volver</a>
+    <nav style="padding: 15px 60px; background: #435e4798; box-shadow: 0 12px 25px #000000af; position: fixed; top: 0; width: 100%; z-index: 100;">
+        <a href="javascript:history.back()" style="color: #ffffff; text-decoration: none; font-weight: bold; font-family: 'Poppins', sans-serif; font-size: 18px; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease;" onmouseover="this.style.color='#b6c0cb'" onmouseout="this.style.color='#ffffff'">
+            <span style="font-size: 24px;">←</span> Volver
+        </a>
     </nav>
 
     <div class="container">
@@ -96,25 +301,28 @@
             <img id="det-img" src="" alt="Cargando...">
         </div>
         <div class="info-sec">
-            <div>
+            <div class="post-header">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <span class="username" id="det-user">...</span>
+                </div>
                 <h2 id="det-title">...</h2>
-                <p style="color: #666;">Subido por: <strong id="det-user">...</strong></p>
-                <p id="det-desc">...</p>
+                <p class="description" id="det-desc">...</p>
             </div>
 
-            <h3 style="border-bottom: 2px solid #e50914; padding-bottom: 5px;">Canciones Sugeridas</h3>
-            <div id="songs-list">
+            <div class="songs-section">
+                <h3>Canciones Sugeridas</h3>
+                <div id="songs-list"></div>
             </div>
 
-            <h3 style="border-bottom: 2px solid #e50914; padding-bottom: 5px;">Comentarios</h3>
-            <div id="comments-list" class="comments-box"></div>
-
-            <form id="comment-form" style="display: flex; gap: 5px;">
-                <input type="text" name="text" placeholder="Escribe un comentario..." style="flex: 1; padding: 8px;"
-                    required>
-                <button type="submit"
-                    style="background: #e50914; color: white; border: none; padding: 0 15px; cursor: pointer;">Enviar</button>
-            </form>
+            <div class="comments-section">
+                <h3>Comentarios</h3>
+                <div id="comments-list" class="comments-box"></div>
+                <form id="comment-form">
+                    <input type="text" name="text" placeholder="Agrega un comentario..." required>
+                    <button type="submit">Publicar</button>
+                </form>
+            </div>
         </div>
     </div>
 

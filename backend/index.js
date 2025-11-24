@@ -95,7 +95,7 @@ app.post('/login', async (req, res) => {
             const token = jwt.sign(
                 { userId: user.UserID, username: user.Username, role: roleName },
                 JWT_SECRET,
-                { expiresIn: '1h' }
+                { expiresIn: '24h' }
             );
 
             res.status(200).json({ success: true, token: token, redirect: '/index.html' });
@@ -546,13 +546,30 @@ app.post('/api/comments', authenticateToken, async (req, res) => {
 app.post('/api/vote', authenticateToken, async (req, res) => {
     try {
         const pool = await poolPromise;
+        
+        // Verificar si ya votó
+        const checkVote = await pool.request()
+            .input('uid', sql.Int, req.user.userId)
+            .input('iid', sql.Int, req.body.imageId)
+            .input('sid', sql.Int, req.body.songId)
+            .query('SELECT * FROM SongVotes WHERE UserID = @uid AND ImageID = @iid AND SongID = @sid');
+        
+        if (checkVote.recordset.length > 0) {
+            return res.status(400).json({ error: 'Ya votaste por esta canción' });
+        }
+        
+        // Registrar el voto
         await pool.request()
-            .input('uid', sql.Int, req.user.userId) // CORREGIDO
+            .input('uid', sql.Int, req.user.userId)
             .input('iid', sql.Int, req.body.imageId)
             .input('sid', sql.Int, req.body.songId)
             .query('INSERT INTO SongVotes (UserID, ImageID, SongID) VALUES (@uid, @iid, @sid)');
-        res.json({ message: 'Voto registrado' });
-    } catch (e) { res.status(500).json({ error: 'Error al votar' }); }
+        
+        res.json({ message: 'Voto registrado exitosamente' });
+    } catch (e) { 
+        console.error('Error al votar:', e);
+        res.status(500).json({ error: 'Error al procesar el voto' }); 
+    }
 });
 
 module.exports = app;
