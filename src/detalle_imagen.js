@@ -47,9 +47,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 3. ENVIAR COMENTARIO
     document.getElementById('comment-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (user.role === 'guest') return alert('Debes iniciar sesión');
+        
+        if (user.role === 'guest') {
+            alert('Debes iniciar sesión para comentar');
+            return;
+        }
 
-        const text = e.target.text.value;
+        const text = e.target.text.value.trim();
+        
+        if (!text) {
+            alert('Por favor escribe un comentario');
+            return;
+        }
+
         try {
             const res = await fetch(`${API_URL}/api/comments`, {
                 method: 'POST',
@@ -59,11 +69,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                 },
                 body: JSON.stringify({ imageId, text })
             });
+            
+            const data = await res.json();
+            
             if (res.ok) {
                 e.target.reset();
                 loadComments(imageId);
+            } else {
+                alert(data.error || 'Error al publicar comentario');
             }
-        } catch (e) { console.error(e); }
+        } catch (error) { 
+            console.error('Error al enviar comentario:', error);
+            alert('Error de conexión. Intenta nuevamente.');
+        }
     });
 });
 
