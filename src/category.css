@@ -1,0 +1,372 @@
+/* ======================== */
+/*        MODAL BASE        */
+/* ======================== */
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    backdrop-filter: blur(3px);
+}
+
+/* Contenedor del modal */
+.modal-content {
+    background: linear-gradient(135deg, #ffffff 0%, #f4f5f7 100%);
+    color: #333;
+    padding: 30px;
+    border-radius: 18px;
+    width: 95%;
+    max-width: 540px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    animation: modalFadeIn 0.25s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Botón cerrar */
+.close-btn {
+    position: absolute;
+    right: 18px;
+    top: 15px;
+    font-size: 30px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.434);
+    font-weight: bold;
+    transition: 0.3s ease;
+}
+
+.close-btn:hover {
+    color: rgba(229, 9, 20, 0.35);
+    transform: rotate(90deg);
+}
+
+/* ======================== */
+/*     FORMULARIO MODAL     */
+/* ======================== */
+
+.modal-content h2 {
+    text-align: center;
+    margin-bottom: 18px;
+    font-family: 'Merriweather', serif;
+    font-size: 26px;
+    color: #ffffff;
+}
+
+/* Inputs y textarea */
+input,
+textarea {
+    width: 100%;
+    padding: 13px 15px;
+    margin-top: 6px;
+    margin-bottom: 18px;
+    background: #fff;
+    border: 2px solid #d0d5d8;
+    color: #333;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.25s ease;
+    font-family: 'Poppins', sans-serif;
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: #7a8993;
+    box-shadow: 0 0 0 3px rgba(122, 137, 147, 0.15);
+}
+
+/* Placeholder más suave */
+input::placeholder,
+textarea::placeholder {
+    color: #999;
+}
+
+/* Titular de sección */
+.modal-content h4 {
+    margin-top: 10px;
+    color: #435e47;
+    font-size: 16px;
+    margin-bottom: 10px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Filas de inputs (título + link) */
+.modal-content .song-title,
+.modal-content .song-link {
+    flex: 1;
+}
+
+.modal-content div[style*="display:flex"] {
+    display: flex !important;
+    gap: 12px !important;
+}
+
+/* Encabezado tipo "Editar Perfil" para el modal de Subir Contenido */
+.modal-content h2 {
+    background: linear-gradient(135deg, #7a8993 0%, #435e47 100%);
+    color: #ffffff;
+    font-family: 'Merriweather', serif;
+    font-size: 24px;
+    margin: -25px -25px 20px -25px;   /* se “pega” a los bordes del modal */
+    padding: 28px 30px;
+    border-radius: 18px 18px 0 0;     /* esquinas redondeadas arriba */
+    text-align: left;
+}
+
+/* Ajuste general del modal para que cuadre con el header */
+.modal-content {
+    background: #f8f9fa;
+    color: #333;
+    padding: 25px;
+    border-radius: 18px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+}
+
+/* X dentro del header degradado */
+.close-btn {
+    position: absolute;
+    right: 22px;
+    top: 18px;
+    font-size: 26px;
+    cursor: pointer;
+    color: #ffffff;
+    font-weight: bold;
+    transition: 0.3s ease;
+}
+
+.close-btn:hover {
+    transform: rotate(90deg);
+    color: #ffcccc;
+}
+
+
+
+/* ======================== */
+/*      BOTÓN PUBLICAR      */
+/* ======================== */
+
+button[type="submit"] {
+    width: 100%;
+    background: linear-gradient(135deg, #7a8993 0%, #435e47 100%);
+    color: #ffffff;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 17px;
+    margin-top: 8px;
+    transition: all 0.28s ease;
+    letter-spacing: 0.4px;
+    box-shadow: 0 4px 12px rgba(67, 94, 71, 0.35);
+}
+
+/* Hover elegante */
+button[type="submit"]:hover {
+    background: linear-gradient(135deg, #435e47 0%, #7a8993 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(67, 94, 71, 0.40);
+}
+
+/* Al hacer click */
+button[type="submit"]:active {
+    transform: translateY(0px) scale(0.97);
+    box-shadow: 0 4px 10px rgba(67, 94, 71, 0.30);
+}
+
+
+/* ======================== */
+/*       MODAL ÉXITO        */
+/* ======================== */
+
+/* ======================== */
+/*      MODAL DE ÉXITO      */
+/* ======================== */
+
+.success-content {
+    text-align: center;
+    background: #ffffff;
+    color: #333;
+    max-width: 380px;
+    border-radius: 22px;
+    padding: 35px 30px 28px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+    animation: popScale 0.25s ease-out;
+
+    /* Quita la franja gris horrible */
+    background-image: none !important;
+}
+
+@keyframes popScale {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+}
+
+/* Ícono */
+.success-icon {
+    font-size: 60px;
+    color: #2ecc71;
+}
+
+/* Título dentro del success */
+.success-content h2 {
+    font-family: 'Merriweather', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #435e47 !important;
+    margin-top: 0;
+    margin-bottom: 10px;
+    text-align: center;
+
+    /* Quitar cualquier fondo que venga heredado */
+    background: none !important;
+}
+
+/* Texto inferior */
+.success-content p {
+    font-size: 15px;
+    color: #666 !important;
+    margin-bottom: 25px;
+}
+
+/* Botón Aceptar */
+.btn-accept {
+    background: linear-gradient(135deg, #7a8993 0%, #435e47 100%);
+    color: #ffffff !important;
+    padding: 12px 40px;
+    border: none;
+    border-radius: 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    letter-spacing: 0.3px;
+}
+
+.btn-accept:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(67, 94, 71, 0.25);
+    background: linear-gradient(135deg, #435e47 0%, #7a8993 100%);
+}
+
+
+/* ======================== */
+/*         GALERÍA          */
+/* ======================== */
+
+#gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 25px;
+    padding: 40px;
+    margin-top: 100px;
+}
+
+.gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+    transition: transform 0.25s ease;
+    cursor: pointer;
+}
+
+.gallery-item:hover {
+    transform: translateY(-6px) scale(1.02);
+    z-index: 10;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+}
+
+.gallery-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    padding: 15px;
+    color: white;
+    opacity: 0;
+    transition: 0.3s ease;
+}
+
+.gallery-item:hover .gallery-info {
+    opacity: 1;
+}
+
+/* ---------- FILE INPUT BONITO ---------- */
+
+/* Contenedor visual del input */
+#file-input {
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 2px solid #d0d5d8;
+    background: #ffffff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+/* Botón "Choose file" moderno */
+#file-input::file-selector-button {
+    padding: 8px 16px;
+    margin-right: 12px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #7a8993 0%, #435e47 100%);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+/* Hover del botón */
+#file-input::file-selector-button:hover {
+    background: linear-gradient(135deg, #435e47 0%, #7a8993 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Hover / focus del campo completo */
+#file-input:hover,
+#file-input:focus {
+    border-color: #7a8993;
+    box-shadow: 0 0 0 3px rgba(122, 137, 147, 0.15);
+    outline: none;
+}
+
+/* Para compatibilidad con navegadores WebKit antiguos */
+#file-input::-webkit-file-upload-button {
+    padding: 8px 16px;
+    margin-right: 12px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #7a8993 0%, #435e47 100%);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
