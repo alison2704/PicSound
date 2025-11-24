@@ -2,6 +2,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Raleway:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
 
+
+
+
 * {
     margin: 0;
     padding: 0;
@@ -247,9 +250,18 @@ nav .logo {
     /* Quita el subrayado */
 }
 
-.btn-nav:hover {
+.btn-nav:hover, .btn-upload:hover {
     background: #ffffffef;
     /* Fondo al pasar el ratón */
+}
+
+
+/* botón de subir contenido (estado normal) */
+.btn-upload {
+    color: rgb(171, 171, 171);
+    font-weight: bold;
+    border-radius: 17px;
+    background: transparent;
 }
 
 

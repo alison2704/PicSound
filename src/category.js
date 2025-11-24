@@ -64,12 +64,38 @@ document.addEventListener("DOMContentLoaded", async function () {
             // Recopilar Canciones
             const titles = document.querySelectorAll('.song-title');
             const links = document.querySelectorAll('.song-link');
+            const errorBox = document.getElementById('songs-error-msg');
+            // Limpiar mensaje previo
+            errorBox.style.display = "none";
+            errorBox.textContent = "";
+
             let songsData = [];
-            titles.forEach((input, index) => {
-                if (input.value.trim() !== "") {
-                    songsData.push({ title: input.value, link: links[index].value });
+            let linksSet = new Set();
+
+            for (let i = 0; i < links.length; i++) {
+                const title = titles[i].value.trim();
+                const link = links[i].value.trim();
+
+                // Revisar duplicados
+                if (linksSet.has(link)) {
+                    errorBox.textContent = "No puedes repetir el mismo link en las canciones.";
+                    errorBox.style.display = "block";
+                    errorBox.style.opacity = "1";
+
+                    // Ocultar mensaje después de 5 segundos
+                    setTimeout(() => {
+                        errorBox.style.opacity = "0";
+                        setTimeout(() => {
+                            errorBox.style.display = "none";
+                        }, 600); // coincide con transition: 0.6s
+                    }, 2000);
+
+                    return; // Detener envío
                 }
-            });
+
+                    linksSet.add(link);
+                    songsData.push({ title, link });
+            }
             formData.append('songs', JSON.stringify(songsData));
 
             const token = localStorage.getItem('jwtToken');
