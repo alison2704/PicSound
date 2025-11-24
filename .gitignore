@@ -78,6 +78,9 @@ storage/
 # ==============================================
 backend/.env
 backend/temp/
-backend/uploads/
 backend/coverage/
 backend/*.log
+
+# Ignorar contenido de uploads, pero mantener la carpeta
+backend/uploads/*
+!backend/uploads/.gitkeep

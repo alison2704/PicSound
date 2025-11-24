@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Imagen</title>
+    <link rel="stylesheet" href="src/index.css">
+    <style>
+        body {
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            max-width: 1000px;
+            margin: 80px auto;
+            gap: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-sec {
+            flex: 1.5;
+        }
+
+        .image-sec img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .info-sec {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Canciones */
+        .song-item {
+            background: #eee;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-vote {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .btn-vote:hover {
+            background: #e50914;
+        }
+
+        /* Comentarios */
+        .comments-box {
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .comment {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 5px;
+        }
+
+        @media(max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav style="padding: 15px; background: #333; position: fixed; top: 0; width: 100%;">
+        <a href="javascript:history.back()" style="color: white; text-decoration: none; font-weight: bold;">&larr;
+            Volver</a>
+    </nav>
+
+    <div class="container">
+        <div class="image-sec">
+            <img id="det-img" src="" alt="Cargando...">
+        </div>
+        <div class="info-sec">
+            <div>
+                <h2 id="det-title">...</h2>
+                <p style="color: #666;">Subido por: <strong id="det-user">...</strong></p>
+                <p id="det-desc">...</p>
+            </div>
+
+            <h3 style="border-bottom: 2px solid #e50914; padding-bottom: 5px;">Canciones Sugeridas</h3>
+            <div id="songs-list">
+            </div>
+
+            <h3 style="border-bottom: 2px solid #e50914; padding-bottom: 5px;">Comentarios</h3>
+            <div id="comments-list" class="comments-box"></div>
+
+            <form id="comment-form" style="display: flex; gap: 5px;">
+                <input type="text" name="text" placeholder="Escribe un comentario..." style="flex: 1; padding: 8px;"
+                    required>
+                <button type="submit"
+                    style="background: #e50914; color: white; border: none; padding: 0 15px; cursor: pointer;">Enviar</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="src/app.js"></script>
+    <script src="src/detalle_imagen.js"></script>
+</body>
+
+</html>

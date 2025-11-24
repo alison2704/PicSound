@@ -43,6 +43,7 @@ DB_DATABASE=PicsoundDB
 DB_PORT=1433
 DB_ENCRYPT=false            # Desactiva SSL (para entorno local)
 PORT=4000                   # Puerto del backend
+JWT_SECRET=                # Contraseña segura
 ```
 
 

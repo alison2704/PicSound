@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const multer = require('multer'); // NECESARIO PARA SUBIR FOTOS
 const { poolPromise, sql } = require('./db');
 
 // FIX 1: LEER LA CLAVE SECRETA Y ASEGURAR QUE NO ES NULA
@@ -23,10 +24,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 1. Esto permite que http://localhost:4000/uploads/foto.jpg funcione
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // servir archivos estáticos (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, '..')));
 app.use(express.static(path.join(__dirname, '..', 'src')));
 
+// --- CONFIGURACIÓN MULTER (SUBIDA DE ARCHIVOS) ---
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        // Asegúrate de crear la carpeta 'uploads' dentro de 'backend'
+        cb(null, path.join(__dirname, 'uploads'));
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 // ---------------------------------------------------------------------
 // RUTAS DE AUTENTICACIÓN (Sin cambios funcionales)
@@ -329,7 +344,6 @@ app.get('/api/images/:categoryId', async (req, res) => {
 
     try {
         const pool = await poolPromise;
-
         // CONSULTA FINAL: Obtener imágenes de la categoría especificada con contadores y canciones.
         const imagesResult = await pool.request()
             .input('categoryId', sql.Int, categoryId) // Usamos el ID para filtrar
@@ -385,6 +399,161 @@ app.get('/api/images/:categoryId', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error interno del servidor al cargar el feed.' });
     }
 })
+/*desde aqui */
+// 3. SUBIR CONTENIDO (CORREGIDO: Usa poolPromise y req.user.userId)
+app.post('/api/upload', authenticateToken, upload.single('image'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: 'Falta la imagen' });
+
+    // Corrección importante: req.user.userId (porque así lo guardaste en el login)
+    const userId = req.user.userId;
+    const { title, description, category, songs } = req.body;
+    // URL accesible desde el frontend
+    const imageUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+
+    let songList = [];
+    try { songList = JSON.parse(songs); } catch (e) { }
+
+    // Usamos la conexión existente
+    const pool = await poolPromise;
+    const transaction = new sql.Transaction(pool);
+
+    try {
+        await transaction.begin();
+
+        // A. Obtener ID Categoría
+        const catReq = new sql.Request(transaction);
+        const catRes = await catReq.input('cName', sql.NVarChar, category)
+            .query('SELECT CategoryID FROM Categories WHERE Name = @cName');
+
+        if (catRes.recordset.length === 0) throw new Error('Categoría inválida: ' + category);
+        const categoryId = catRes.recordset[0].CategoryID;
+
+        // B. Insertar Imagen
+        const imgReq = new sql.Request(transaction);
+        const imgRes = await imgReq
+            .input('uid', sql.Int, userId)
+            .input('cid', sql.Int, categoryId)
+            .input('tit', sql.NVarChar, title)
+            .input('desc', sql.NVarChar, description)
+            .input('url', sql.NVarChar, imageUrl)
+            .query('INSERT INTO Images (UserID, CategoryID, Title, Description, ImageURL) OUTPUT INSERTED.ImageID VALUES (@uid, @cid, @tit, @desc, @url)');
+
+        const newImageId = imgRes.recordset[0].ImageID;
+
+        // C. Insertar Canciones
+        for (let i = 0; i < songList.length; i++) {
+            const s = songList[i];
+            if (s.title && s.link) {
+                // Insertar Canción
+                const songReq = new sql.Request(transaction);
+                const songRes = await songReq
+                    .input('st', sql.NVarChar, s.title)
+                    .input('su', sql.NVarChar, s.link)
+                    .query('INSERT INTO Songs (Title, ExternalURL) OUTPUT INSERTED.SongID VALUES (@st, @su)');
+
+                const newSongId = songRes.recordset[0].SongID;
+
+                // Vincular
+                const linkReq = new sql.Request(transaction);
+                await linkReq
+                    .input('iid', sql.Int, newImageId)
+                    .input('sid', sql.Int, newSongId)
+                    .input('pos', sql.TinyInt, i + 1)
+                    .query('INSERT INTO ImageSongs (ImageID, SongID, Position) VALUES (@iid, @sid, @pos)');
+            }
+        }
+
+        await transaction.commit();
+        res.json({ message: 'Publicado con éxito' });
+
+    } catch (err) {
+        if (transaction._aborted === false) await transaction.rollback(); // Rollback solo si no abortó ya
+        console.error("Error upload:", err);
+        res.status(500).json({ error: 'Error al guardar en BD: ' + err.message });
+    }
+});
+
+// 4. FEED POR CATEGORÍA
+app.get('/api/images/:categoryName', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('cat', sql.NVarChar, req.params.categoryName)
+            .query(`
+                SELECT i.ImageID, i.Title, i.Description, i.ImageURL, u.Username,
+                       (SELECT COUNT(*) FROM Likes WHERE ImageID = i.ImageID) as LikesCount
+                FROM Images i
+                JOIN Categories c ON i.CategoryID = c.CategoryID
+                JOIN Users u ON i.UserID = u.UserID
+                WHERE c.Name = @cat
+                ORDER BY i.CreatedAt DESC
+            `);
+        res.json(result.recordset);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 5. DETALLE IMAGEN
+app.get('/api/image-detail/:id', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const imgRes = await pool.request().input('id', sql.Int, req.params.id).query(`
+            SELECT i.*, u.Username, c.Name as CategoryName
+            FROM Images i
+            JOIN Users u ON i.UserID = u.UserID
+            JOIN Categories c ON i.CategoryID = c.CategoryID
+            WHERE i.ImageID = @id
+        `);
+        if (imgRes.recordset.length === 0) return res.status(404).json({ message: 'No encontrado' });
+
+        const songsRes = await pool.request().input('id', sql.Int, req.params.id).query(`
+            SELECT s.SongID, s.Title, s.ExternalURL, ims.Position,
+                   (SELECT COUNT(*) FROM SongVotes sv WHERE sv.SongID = s.SongID AND sv.ImageID = @id) as Votes
+            FROM ImageSongs ims
+            JOIN Songs s ON ims.SongID = s.SongID
+            WHERE ims.ImageID = @id
+            ORDER BY ims.Position ASC
+        `);
+        res.json({ image: imgRes.recordset[0], songs: songsRes.recordset });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 6. COMENTARIOS Y VOTOS
+app.get('/api/comments/:imageId', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().input('iid', sql.Int, req.params.imageId).query(`
+            SELECT c.CommentID, c.Content, c.CreatedAt, u.Username
+            FROM Comments c
+            JOIN Users u ON c.UserID = u.UserID
+            WHERE c.ImageID = @iid ORDER BY c.CreatedAt DESC
+        `);
+        res.json(result.recordset);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/comments', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        await pool.request()
+            .input('uid', sql.Int, req.user.userId) // CORREGIDO
+            .input('iid', sql.Int, req.body.imageId)
+            .input('txt', sql.NVarChar, req.body.text)
+            .query('INSERT INTO Comments (UserID, ImageID, Content) VALUES (@uid, @iid, @txt)');
+        res.json({ message: 'Comentario guardado' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/vote', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        await pool.request()
+            .input('uid', sql.Int, req.user.userId) // CORREGIDO
+            .input('iid', sql.Int, req.body.imageId)
+            .input('sid', sql.Int, req.body.songId)
+            .query('INSERT INTO SongVotes (UserID, ImageID, SongID) VALUES (@uid, @iid, @sid)');
+        res.json({ message: 'Voto registrado' });
+    } catch (e) { res.status(500).json({ error: 'Error al votar' }); }
+});
 
 module.exports = app;
 app.listen(PORT, () => console.log(`Backend corriendo en http://localhost:${PORT}`));
