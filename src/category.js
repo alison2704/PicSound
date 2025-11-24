@@ -54,9 +54,42 @@ document.addEventListener("DOMContentLoaded", async function () {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // Validar archivo de imagen
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Por favor selecciona una imagen');
+                return;
+            }
+
+            // Validar extensión
+            const allowedExtensions = /(\.(jpg|jpeg|png))$/i;
+            if (!allowedExtensions.test(file.name)) {
+                alert('Solo se permiten archivos de imagen en formato .jpg, .jpeg o .png');
+                fileInput.value = '';
+                return;
+            }
+
+            // Validar tipo MIME
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('El archivo seleccionado no es una imagen válida');
+                fileInput.value = '';
+                return;
+            }
+
+            // Validar tamaño (máximo 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB en bytes
+            if (file.size > maxSize) {
+                alert('La imagen es muy grande. El tamaño máximo permitido es 5MB');
+                fileInput.value = '';
+                return;
+            }
+
             // Preparar datos
             const formData = new FormData();
-            formData.append('image', document.getElementById('file-input').files[0]);
+            formData.append('image', file);
             formData.append('title', form.title.value);
             formData.append('description', form.description.value);
             formData.append('category', categoryName); // El backend necesita el nombre para buscar el ID internamente (según tu código backend actual)

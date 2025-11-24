@@ -41,7 +41,26 @@ const storage = multer.diskStorage({
         cb(null, Date.now() + path.extname(file.originalname));
     }
 });
-const upload = multer({ storage: storage });
+
+// Filtro para validar tipos de archivo
+const fileFilter = (req, file, cb) => {
+    // Extensiones permitidas
+    const allowedExtensions = /jpeg|jpg|png/;
+    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedExtensions.test(file.mimetype);
+
+    if (extname && mimetype) {
+        return cb(null, true);
+    } else {
+        cb(new Error('Solo se permiten archivos de imagen en formato .jpg, .jpeg o .png'));
+    }
+};
+
+const upload = multer({ 
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 } // Límite de 5MB
+});
 
 // ---------------------------------------------------------------------
 // RUTAS DE AUTENTICACIÓN (Sin cambios funcionales)
@@ -401,7 +420,21 @@ app.get('/api/images/:categoryId', async (req, res) => {
 })
 /*desde aqui */
 // 3. SUBIR CONTENIDO (CORREGIDO: Usa poolPromise y req.user.userId)
-app.post('/api/upload', authenticateToken, upload.single('image'), async (req, res) => {
+app.post('/api/upload', authenticateToken, (req, res, next) => {
+    upload.single('image')(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+            // Error de multer
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ message: 'La imagen es muy grande. El tamaño máximo es 5MB' });
+            }
+            return res.status(400).json({ message: 'Error al subir la imagen: ' + err.message });
+        } else if (err) {
+            // Error del filtro de archivo
+            return res.status(400).json({ message: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'Falta la imagen' });
 
     // Corrección importante: req.user.userId (porque así lo guardaste en el login)
