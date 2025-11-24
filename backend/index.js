@@ -572,5 +572,79 @@ app.post('/api/vote', authenticateToken, async (req, res) => {
     }
 });
 
+// LIKES EN IMÁGENES
+app.post('/api/like', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const { imageId } = req.body;
+        
+        // Verificar si ya dio like
+        const checkLike = await pool.request()
+            .input('uid', sql.Int, req.user.userId)
+            .input('iid', sql.Int, imageId)
+            .query('SELECT * FROM Likes WHERE UserID = @uid AND ImageID = @iid');
+        
+        if (checkLike.recordset.length > 0) {
+            // Si ya existe, quitar like (toggle)
+            await pool.request()
+                .input('uid', sql.Int, req.user.userId)
+                .input('iid', sql.Int, imageId)
+                .query('DELETE FROM Likes WHERE UserID = @uid AND ImageID = @iid');
+        } else {
+            // Si no existe, agregar like
+            await pool.request()
+                .input('uid', sql.Int, req.user.userId)
+                .input('iid', sql.Int, imageId)
+                .query('INSERT INTO Likes (UserID, ImageID) VALUES (@uid, @iid)');
+        }
+        
+        // Obtener el conteo actualizado de likes
+        const likesCount = await pool.request()
+            .input('iid', sql.Int, imageId)
+            .query('SELECT COUNT(*) as total FROM Likes WHERE ImageID = @iid');
+        
+        // Verificar el nuevo estado del usuario
+        const userLike = await pool.request()
+            .input('uid', sql.Int, req.user.userId)
+            .input('iid', sql.Int, imageId)
+            .query('SELECT * FROM Likes WHERE UserID = @uid AND ImageID = @iid');
+        
+        res.json({ 
+            message: userLike.recordset.length > 0 ? 'Like agregado' : 'Like removido',
+            liked: userLike.recordset.length > 0,
+            totalLikes: likesCount.recordset[0].total
+        });
+    } catch (e) { 
+        console.error('Error al dar like:', e);
+        res.status(500).json({ error: 'Error al procesar el like' }); 
+    }
+});
+
+// Obtener estado de like y conteo
+app.get('/api/like-status/:imageId', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        
+        // Contar likes totales
+        const likesCount = await pool.request()
+            .input('iid', sql.Int, req.params.imageId)
+            .query('SELECT COUNT(*) as total FROM Likes WHERE ImageID = @iid');
+        
+        // Verificar si el usuario dio like
+        const userLike = await pool.request()
+            .input('uid', sql.Int, req.user.userId)
+            .input('iid', sql.Int, req.params.imageId)
+            .query('SELECT * FROM Likes WHERE UserID = @uid AND ImageID = @iid');
+        
+        res.json({
+            totalLikes: likesCount.recordset[0].total,
+            userLiked: userLike.recordset.length > 0
+        });
+    } catch (e) { 
+        console.error('Error al obtener like status:', e);
+        res.status(500).json({ error: 'Error al obtener estado del like' }); 
+    }
+});
+
 module.exports = app;
 app.listen(PORT, () => console.log(`Backend corriendo en http://localhost:${PORT}`));

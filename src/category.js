@@ -107,6 +107,20 @@ document.addEventListener("DOMContentLoaded", async function () {
     } else {
         document.getElementById('gallery').innerHTML = '<p style="text-align:center; color:white;">Error: Falta ID de categoría en la URL.</p>';
     }
+
+    // Recargar galería cuando la página vuelve a estar visible (regresando de detalle)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && categoryId) {
+            loadGallery(categoryId);
+        }
+    });
+
+    // También recargar cuando la ventana vuelve a tener foco
+    window.addEventListener('focus', () => {
+        if (categoryId) {
+            loadGallery(categoryId);
+        }
+    });
 });
 
 // FUNCIÓN PARA CARGAR/RENDERIZAR IMÁGENES
@@ -144,8 +158,11 @@ async function loadGallery(id) {
                 <div class="gallery-info">
                     <h3 style="margin:0; font-size:1.1em;">${title}</h3>
                     <p style="margin:5px 0 0; font-size:0.9em; color:#ddd;">Por: ${username}</p>
-                    <div style="margin-top:10px; font-size:0.85em;">
-                        <i class="fa-solid fa-heart" style="color:#e50914;"></i> ${likes}
+                    <div style="margin-top:10px; font-size:0.85em; display:flex; align-items:center; gap:5px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" style="fill:#ed4956;">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                        <span>${likes} me gusta</span>
                     </div>
                 </div>
             `;

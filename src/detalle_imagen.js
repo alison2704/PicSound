@@ -44,6 +44,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 2. CARGAR COMENTARIOS
     loadComments(imageId);
 
+    // 2.5 CARGAR ESTADO DE LIKES
+    if (user.role !== 'guest') {
+        loadLikeStatus(imageId);
+    } else {
+        // Si es guest, solo mostrar conteo sin permitir dar like
+        loadLikeCount(imageId);
+    }
+
     // 3. ENVIAR COMENTARIO
     document.getElementById('comment-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -115,3 +123,99 @@ window.votar = async (imageId, songId) => {
         if (res.ok) location.reload();
     } catch (e) { console.error(e); }
 };
+
+// Cargar estado de likes (para usuarios autenticados)
+async function loadLikeStatus(imageId) {
+    try {
+        const res = await fetch(`${API_URL}/api/like-status/${imageId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            console.log('Estado de likes recibido:', data);
+            updateLikeUI(data.totalLikes, data.userLiked);
+            
+            // Agregar evento al botón solo una vez
+            const likeButton = document.getElementById('like-button');
+            if (!likeButton.dataset.listenerAdded) {
+                likeButton.addEventListener('click', () => toggleLike(imageId));
+                likeButton.dataset.listenerAdded = 'true';
+            }
+        } else {
+            console.error('Error al cargar estado:', await res.text());
+        }
+    } catch (e) {
+        console.error('Error al cargar likes:', e);
+    }
+}
+
+// Cargar solo conteo de likes (para guests)
+async function loadLikeCount(imageId) {
+    try {
+        const res = await fetch(`${API_URL}/api/like-status/${imageId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            updateLikeUI(data.totalLikes, false);
+            // Deshabilitar botón para guests
+            document.getElementById('like-button').disabled = true;
+            document.getElementById('like-button').style.cursor = 'default';
+        }
+    } catch (e) {
+        console.error('Error al cargar likes:', e);
+    }
+}
+
+// Toggle like (dar/quitar)
+async function toggleLike(imageId) {
+    try {
+        const res = await fetch(`${API_URL}/api/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            },
+            body: JSON.stringify({ imageId })
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            console.log('Toggle response:', data);
+            // Actualizar UI directamente con la respuesta
+            updateLikeUI(data.totalLikes, data.liked);
+        } else {
+            console.error('Error en respuesta:', await res.text());
+        }
+    } catch (e) {
+        console.error('Error al dar like:', e);
+    }
+}
+
+// Actualizar UI de likes
+function updateLikeUI(totalLikes, userLiked) {
+    const heartIcon = document.getElementById('heart-icon');
+    const likesCount = document.getElementById('likes-count');
+    
+    console.log('Actualizando UI - Total likes:', totalLikes, 'User liked:', userLiked);
+    
+    // Actualizar corazón
+    if (userLiked) {
+        heartIcon.classList.remove('not-liked');
+        heartIcon.classList.add('liked');
+    } else {
+        heartIcon.classList.remove('liked');
+        heartIcon.classList.add('not-liked');
+    }
+    
+    // Actualizar contador
+    const texto = totalLikes === 1 ? 'me gusta' : 'me gusta';
+    likesCount.textContent = `${totalLikes} ${texto}`;
+    console.log('Contador actualizado a:', likesCount.textContent);
+}
