@@ -56,7 +56,7 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: { fileSize: 5 * 1024 * 1024 } // Límite de 5MB
@@ -68,9 +68,9 @@ const upload = multer({
 
 // Ruta /register (O2H1 y O11H6)
 app.post('/register', async (req, res) => {
-    // ... (Lógica de registro sin cambios) ...
     const { username, email, password } = req.body;
-    if (!username || !email || !password) return res.status(400).json({ success: false, message: 'Faltan campos obligatorios.' });
+    if (!username || !email || !password)
+        return res.status(400).json({ success: false, message: 'Faltan campos obligatorios.' });
     try {
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
@@ -87,7 +87,13 @@ app.post('/register', async (req, res) => {
         console.error('Error en el registro:', err);
         let message = 'Error al registrar el usuario.';
         if (err.number === 2627 || err.message.includes('UNIQUE KEY constraint')) {
-            message = 'El correo electrónico ya está registrado.';
+            if (err.message.includes(email)) {
+                message = 'El correo electrónico ya está registrado.';
+            } else if (err.message.includes(username)) {
+                message = 'El nombre de usuario ya no esta disponible.';
+            } else {
+                message = 'El nombre de usuario o correo electrónico ya están en uso.';
+            }
         }
         res.status(400).json({ success: false, message: message });
     }
@@ -579,29 +585,29 @@ app.post('/api/comments', authenticateToken, async (req, res) => {
 app.post('/api/vote', authenticateToken, async (req, res) => {
     try {
         const pool = await poolPromise;
-        
+
         // Verificar si ya votó
         const checkVote = await pool.request()
             .input('uid', sql.Int, req.user.userId)
             .input('iid', sql.Int, req.body.imageId)
             .input('sid', sql.Int, req.body.songId)
             .query('SELECT * FROM SongVotes WHERE UserID = @uid AND ImageID = @iid AND SongID = @sid');
-        
+
         if (checkVote.recordset.length > 0) {
             return res.status(400).json({ error: 'Ya votaste por esta canción' });
         }
-        
+
         // Registrar el voto
         await pool.request()
             .input('uid', sql.Int, req.user.userId)
             .input('iid', sql.Int, req.body.imageId)
             .input('sid', sql.Int, req.body.songId)
             .query('INSERT INTO SongVotes (UserID, ImageID, SongID) VALUES (@uid, @iid, @sid)');
-        
+
         res.json({ message: 'Voto registrado exitosamente' });
-    } catch (e) { 
+    } catch (e) {
         console.error('Error al votar:', e);
-        res.status(500).json({ error: 'Error al procesar el voto' }); 
+        res.status(500).json({ error: 'Error al procesar el voto' });
     }
 });
 
@@ -610,13 +616,13 @@ app.post('/api/like', authenticateToken, async (req, res) => {
     try {
         const pool = await poolPromise;
         const { imageId } = req.body;
-        
+
         // Verificar si ya dio like
         const checkLike = await pool.request()
             .input('uid', sql.Int, req.user.userId)
             .input('iid', sql.Int, imageId)
             .query('SELECT * FROM Likes WHERE UserID = @uid AND ImageID = @iid');
-        
+
         if (checkLike.recordset.length > 0) {
             // Si ya existe, quitar like (toggle)
             await pool.request()
@@ -630,26 +636,26 @@ app.post('/api/like', authenticateToken, async (req, res) => {
                 .input('iid', sql.Int, imageId)
                 .query('INSERT INTO Likes (UserID, ImageID) VALUES (@uid, @iid)');
         }
-        
+
         // Obtener el conteo actualizado de likes
         const likesCount = await pool.request()
             .input('iid', sql.Int, imageId)
             .query('SELECT COUNT(*) as total FROM Likes WHERE ImageID = @iid');
-        
+
         // Verificar el nuevo estado del usuario
         const userLike = await pool.request()
             .input('uid', sql.Int, req.user.userId)
             .input('iid', sql.Int, imageId)
             .query('SELECT * FROM Likes WHERE UserID = @uid AND ImageID = @iid');
-        
-        res.json({ 
+
+        res.json({
             message: userLike.recordset.length > 0 ? 'Like agregado' : 'Like removido',
             liked: userLike.recordset.length > 0,
             totalLikes: likesCount.recordset[0].total
         });
-    } catch (e) { 
+    } catch (e) {
         console.error('Error al dar like:', e);
-        res.status(500).json({ error: 'Error al procesar el like' }); 
+        res.status(500).json({ error: 'Error al procesar el like' });
     }
 });
 
@@ -657,25 +663,25 @@ app.post('/api/like', authenticateToken, async (req, res) => {
 app.get('/api/like-status/:imageId', authenticateToken, async (req, res) => {
     try {
         const pool = await poolPromise;
-        
+
         // Contar likes totales
         const likesCount = await pool.request()
             .input('iid', sql.Int, req.params.imageId)
             .query('SELECT COUNT(*) as total FROM Likes WHERE ImageID = @iid');
-        
+
         // Verificar si el usuario dio like
         const userLike = await pool.request()
             .input('uid', sql.Int, req.user.userId)
             .input('iid', sql.Int, req.params.imageId)
             .query('SELECT * FROM Likes WHERE UserID = @uid AND ImageID = @iid');
-        
+
         res.json({
             totalLikes: likesCount.recordset[0].total,
             userLiked: userLike.recordset.length > 0
         });
-    } catch (e) { 
+    } catch (e) {
         console.error('Error al obtener like status:', e);
-        res.status(500).json({ error: 'Error al obtener estado del like' }); 
+        res.status(500).json({ error: 'Error al obtener estado del like' });
     }
 });
 
