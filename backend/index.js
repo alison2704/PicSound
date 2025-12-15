@@ -56,6 +56,9 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
+// Límite de tamaño y configuración final de multer
+//Multer significa que los archivos subidos se manejarán correctamente.
+
 const upload = multer({
     storage: storage,
     fileFilter: fileFilter,

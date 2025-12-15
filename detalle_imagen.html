@@ -353,6 +353,120 @@
                 max-height: 300px;
             }
         }
+
+        .youtube-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.85);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .youtube-modal-content {
+            position: relative;
+            margin: 5% auto;
+            width: 90%;
+            max-width: 900px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .youtube-modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: #ffffff;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .youtube-modal-close:hover {
+            color: #ed4956;
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        .youtube-iframe-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .youtube-iframe-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .youtube-modal-title {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #7a8993 0%, #435e47 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .music-icon-circle {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .music-icon-circle svg {
+            width: 16px;
+            height: 16px;
+            fill: white;
+        }
+
+        @media(max-width: 768px) {
+            .youtube-modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            
+            .youtube-modal-close {
+                top: -35px;
+                font-size: 28px;
+            }
+        }
     </style>
 </head>
 
@@ -400,6 +514,23 @@
                     <input type="text" name="text" placeholder="Agrega un comentario..." required>
                     <button type="submit">Publicar</button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="youtube-modal" class="youtube-modal">
+        <div class="youtube-modal-content">
+            <span class="youtube-modal-close" onclick="cerrarModalYoutube()">&times;</span>
+            <div class="youtube-modal-title">
+                <div class="music-icon-circle">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+                <span id="youtube-modal-title">Reproduciendo canción</span>
+            </div>
+            <div class="youtube-iframe-container">
+                <iframe id="youtube-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
         </div>
     </div>

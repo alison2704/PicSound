@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             div.innerHTML = `
                 <div>
                     <strong>${song.Title}</strong>
-                    <br><a href="${song.ExternalURL}" target="_blank" style="font-size:0.8em; color:#007bff;">Escuchar</a>
+                    <br><a href="javascript:void(0)" onclick="abrirModalYoutube('${song.ExternalURL}', '${song.Title.replace(/'/g, "\\'")}')" style="font-size:0.8em; color:#007bff;">▶ Escuchar</a>
                 </div>
                 <div style="text-align:right;">
                     <span style="font-size:0.9em;">Votos: ${song.Votes}</span><br>
@@ -219,3 +219,52 @@ function updateLikeUI(totalLikes, userLiked) {
     likesCount.textContent = `${totalLikes} ${texto}`;
     console.log('Contador actualizado a:', likesCount.textContent);
 }
+
+function extraerIdYoutube(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+window.abrirModalYoutube = function(url, titulo) {
+    const videoId = extraerIdYoutube(url);
+    
+    if (!videoId) {
+        alert('URL de YouTube no válida');
+        return;
+    }
+    
+    const modal = document.getElementById('youtube-modal');
+    const iframe = document.getElementById('youtube-iframe');
+    const modalTitle = document.getElementById('youtube-modal-title');
+    
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+    
+    iframe.src = embedUrl;
+    modalTitle.textContent = titulo;
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+window.cerrarModalYoutube = function() {
+    const modal = document.getElementById('youtube-modal');
+    const iframe = document.getElementById('youtube-iframe');
+    
+    iframe.src = '';
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('youtube-modal');
+    if (event.target === modal) {
+        cerrarModalYoutube();
+    }
+}
+
+document.addEventListener('keydown', function(event) {
+    const modal = document.getElementById('youtube-modal');
+    if (modal.style.display === 'block' && event.key === 'Escape') {
+        cerrarModalYoutube();
+    }
+});
