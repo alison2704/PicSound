@@ -4,7 +4,7 @@
 function getUserInfo() {
     const token = localStorage.getItem('jwtToken');
     if (!token) {
-        return { isAuthenticated: false, username: null, role: 'guest' };
+        return { isAuthenticated: false, username: null, role: 'guest', userId: null };
     }
 
     try {
@@ -25,13 +25,14 @@ function getUserInfo() {
         return {
             isAuthenticated: true,
             username: payload.username || 'Usuario Registrado',
-            role: payload.role || 'user' // El rol ahora viene del token
+            role: payload.role || 'user', // El rol ahora viene del token
+            userId: payload.userId // Agregamos el userId del payload
         };
     } catch (e) {
         console.error("Error al decodificar el token:", e);
         // Si el token es inválido, lo eliminamos.
         localStorage.removeItem('jwtToken');
-        return { isAuthenticated: false, username: null, role: 'guest' };
+        return { isAuthenticated: false, username: null, role: 'guest', userId: null };
     }
 }
 

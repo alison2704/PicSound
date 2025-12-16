@@ -559,12 +559,19 @@ app.get('/api/image-detail/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ==============================================================================
 // 6. COMENTARIOS Y VOTOS
+// ==============================================================================
+// Historia de Usuario O10H5: Eliminar o editar mis propios comentarios
+// para corregir errores o información equivocada.
+// ==============================================================================
+
+// Obtener comentarios de una imagen (incluye UserID para identificar comentarios propios)
 app.get('/api/comments/:imageId', async (req, res) => {
     try {
         const pool = await poolPromise;
         const result = await pool.request().input('iid', sql.Int, req.params.imageId).query(`
-            SELECT c.CommentID, c.Content, c.CreatedAt, u.Username
+            SELECT c.CommentID, c.Content, c.CreatedAt, c.UserID, u.Username
             FROM Comments c
             JOIN Users u ON c.UserID = u.UserID
             WHERE c.ImageID = @iid ORDER BY c.CreatedAt DESC
@@ -583,6 +590,74 @@ app.post('/api/comments', authenticateToken, async (req, res) => {
             .query('INSERT INTO Comments (UserID, ImageID, Content) VALUES (@uid, @iid, @txt)');
         res.json({ message: 'Comentario guardado' });
     } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ==============================================================================
+// EDITAR COMENTARIO PROPIO (O10H5)
+// Permite al usuario editar solo sus propios comentarios
+// ==============================================================================
+app.put('/api/comments/:commentId', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const { commentId } = req.params;
+        const { text } = req.body;
+
+        if (!text || text.trim().length === 0) {
+            return res.status(400).json({ error: 'El comentario no puede estar vacío' });
+        }
+
+        // Verificar que el comentario pertenece al usuario
+        const checkOwner = await pool.request()
+            .input('cid', sql.Int, commentId)
+            .input('uid', sql.Int, req.user.userId)
+            .query('SELECT CommentID FROM Comments WHERE CommentID = @cid AND UserID = @uid');
+
+        if (checkOwner.recordset.length === 0) {
+            return res.status(403).json({ error: 'No tienes permiso para editar este comentario' });
+        }
+
+        // Actualizar el comentario
+        await pool.request()
+            .input('cid', sql.Int, commentId)
+            .input('txt', sql.NVarChar, text)
+            .query('UPDATE Comments SET Content = @txt WHERE CommentID = @cid');
+
+        res.json({ message: 'Comentario actualizado exitosamente' });
+    } catch (e) {
+        console.error('Error al editar comentario:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ==============================================================================
+// ELIMINAR COMENTARIO PROPIO (O10H5)
+// Permite al usuario eliminar solo sus propios comentarios
+// ==============================================================================
+app.delete('/api/comments/:commentId', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const { commentId } = req.params;
+
+        // Verificar que el comentario pertenece al usuario
+        const checkOwner = await pool.request()
+            .input('cid', sql.Int, commentId)
+            .input('uid', sql.Int, req.user.userId)
+            .query('SELECT CommentID FROM Comments WHERE CommentID = @cid AND UserID = @uid');
+
+        if (checkOwner.recordset.length === 0) {
+            return res.status(403).json({ error: 'No tienes permiso para eliminar este comentario' });
+        }
+
+        // Eliminar el comentario
+        await pool.request()
+            .input('cid', sql.Int, commentId)
+            .query('DELETE FROM Comments WHERE CommentID = @cid');
+
+        res.json({ message: 'Comentario eliminado exitosamente' });
+    } catch (e) {
+        console.error('Error al eliminar comentario:', e);
+        res.status(500).json({ error: e.message });
+    }
 });
 
 app.post('/api/vote', authenticateToken, async (req, res) => {
