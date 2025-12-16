@@ -210,7 +210,7 @@ async function loadGallery(id) {
 
             const card = document.createElement('div');
             card.className = 'gallery-item';
-            card.onclick = () => window.location.href = `detalle_imagen.html?id=${img.ImageID}`;
+            card.onclick = () => window.location.href = `detalle_imagen.html?id=${img.ImageID}&categoryId=${id}`;
 
             card.innerHTML = `
                 <img src="${url}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/300?text=Error+Img'">

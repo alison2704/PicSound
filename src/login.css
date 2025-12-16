@@ -44,9 +44,10 @@ body::after {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
     position: relative;
     overflow: hidden;
-    width: 768px;
-    max-width: 100%;
+    width: 90%;
+    max-width: 768px;
     min-height: 480px;
+    margin: 20px;
 }
 
 .container p {
@@ -283,4 +284,193 @@ body::after {
 #close-modal:hover {
     background-color: #218838;
     /* Verde más oscuro al pasar el cursor */
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablets */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        min-height: 450px;
+        border-radius: 20px;
+        margin: 15px;
+    }
+
+    .container p {
+        font-size: 13px;
+        line-height: 18px;
+        margin: 15px 0;
+    }
+
+    .container span {
+        font-size: 11px;
+    }
+
+    .container a {
+        font-size: 12px;
+    }
+
+    .container button {
+        font-size: 11px;
+        padding: 9px 35px;
+    }
+
+    .container form {
+        padding: 0 30px;
+    }
+
+    .container input {
+        padding: 9px 12px;
+        font-size: 12px;
+    }
+
+    .social-icons a {
+        width: 36px;
+        height: 36px;
+        margin: 0 2px;
+    }
+
+    .toggle-container {
+        border-radius: 120px 0 0 80px;
+    }
+
+    .container.active .toggle-container {
+        border-radius: 0 120px 80px 0;
+    }
+
+    .toggle-panel {
+        padding: 0 20px;
+    }
+
+    .toggle-panel h1 {
+        font-size: 22px;
+    }
+
+    .toggle-panel p {
+        font-size: 13px;
+    }
+
+    #error-modal {
+        width: 260px;
+        padding: 18px;
+    }
+}
+
+/* Móviles */
+@media (max-width: 480px) {
+    body {
+        height: auto;
+        min-height: 100vh;
+        padding: 10px 0;
+    }
+
+    .container {
+        width: 95%;
+        min-height: 420px;
+        border-radius: 15px;
+        margin: 10px auto;
+    }
+
+    .container p {
+        font-size: 12px;
+        line-height: 16px;
+        margin: 12px 0;
+    }
+
+    .container span {
+        font-size: 10px;
+    }
+
+    .container a {
+        font-size: 11px;
+        margin: 12px 0 8px;
+    }
+
+    .container button {
+        font-size: 10px;
+        padding: 8px 28px;
+        margin-top: 8px;
+    }
+
+    .container form {
+        padding: 0 20px;
+    }
+
+    .container input {
+        padding: 8px 10px;
+        font-size: 11px;
+        margin: 6px 0;
+    }
+
+    .social-icons {
+        margin: 15px 0;
+    }
+
+    .social-icons a {
+        width: 32px;
+        height: 32px;
+        margin: 0 2px;
+    }
+
+    .toggle-container {
+        border-radius: 100px 0 0 60px;
+    }
+
+    .container.active .toggle-container {
+        border-radius: 0 100px 60px 0;
+    }
+
+    .toggle-panel {
+        padding: 0 15px;
+    }
+
+    .toggle-panel h1 {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .toggle-panel p {
+        font-size: 11px;
+        line-height: 16px;
+    }
+
+    #error-modal {
+        width: 90%;
+        max-width: 240px;
+        padding: 15px;
+    }
+
+    #modal-content p {
+        font-size: 13px;
+    }
+
+    #close-modal {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 360px) {
+    .container {
+        width: 98%;
+        min-height: 400px;
+    }
+
+    .container form {
+        padding: 0 15px;
+    }
+
+    .toggle-panel h1 {
+        font-size: 16px;
+    }
+
+    .toggle-panel p {
+        font-size: 10px;
+    }
+
+    .container button {
+        padding: 7px 22px;
+    }
 }
