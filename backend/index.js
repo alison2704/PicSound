@@ -123,7 +123,7 @@ app.post('/login', async (req, res) => {
             const token = jwt.sign(
                 { userId: user.UserID, username: user.Username, role: roleName },
                 JWT_SECRET,
-                { expiresIn: '24h' }
+                { expiresIn: '48h' }
             );
 
             res.status(200).json({ success: true, token: token, redirect: '/index.html' });
@@ -173,7 +173,7 @@ app.get('/api/profile/me', authenticateToken, async (req, res) => {
             .query(`SELECT UserID, Username, Email, CreatedAt FROM Users WHERE UserID = @userId;`);
 
         const imagesResult = await pool.request().input('userId', sql.Int, userId)
-            .query(`SELECT ImageID, Title, ImageUrl, Description, CreatedAt FROM Images WHERE UserID = @userId ORDER BY CreatedAt DESC;`);
+            .query(`SELECT ImageID, ImageUrl, Description, CreatedAt FROM Images WHERE UserID = @userId ORDER BY CreatedAt DESC;`);
 
         if (!userResult.recordset.length) return res.status(404).json({ message: "Perfil no encontrado." });
 
@@ -378,7 +378,6 @@ app.get('/api/images/:categoryId', async (req, res) => {
             .query(`
                 SELECT 
                     I.ImageID,
-                    I.Title,
                     I.Description,
                     I.ImageURL,
                     U.Username AS UploaderUsername,
@@ -390,7 +389,6 @@ app.get('/api/images/:categoryId', async (req, res) => {
                     (
                         SELECT 
                             S.SongID, 
-                            S.Title AS SongTitle, 
                             S.ExternalURL,
                             ISNULL(V.VoteCount, 0) AS VoteCount
                         FROM ImageSongs ISG
@@ -412,7 +410,6 @@ app.get('/api/images/:categoryId', async (req, res) => {
         // Mapear y parsear los resultados
         const images = imagesResult.recordset.map(img => ({
             ImageID: img.ImageID,
-            Title: img.Title,
             Description: img.Description,
             ImageURL: img.ImageURL,
             UploaderUsername: img.UploaderUsername,
@@ -427,6 +424,7 @@ app.get('/api/images/:categoryId', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error interno del servidor al cargar el feed.' });
     }
 })
+
 /*desde aqui */
 // 3. SUBIR CONTENIDO (CORREGIDO: Usa poolPromise y req.user.userId)
 app.post('/api/upload', authenticateToken, (req, res, next) => {
@@ -448,7 +446,7 @@ app.post('/api/upload', authenticateToken, (req, res, next) => {
 
     // Corrección importante: req.user.userId (porque así lo guardaste en el login)
     const userId = req.user.userId;
-    const { title, description, category, songs } = req.body;
+    const { description, category, songs } = req.body;
     // URL accesible desde el frontend
     const imageUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
 
@@ -475,10 +473,9 @@ app.post('/api/upload', authenticateToken, (req, res, next) => {
         const imgRes = await imgReq
             .input('uid', sql.Int, userId)
             .input('cid', sql.Int, categoryId)
-            .input('tit', sql.NVarChar, title)
             .input('desc', sql.NVarChar, description)
             .input('url', sql.NVarChar, imageUrl)
-            .query('INSERT INTO Images (UserID, CategoryID, Title, Description, ImageURL) OUTPUT INSERTED.ImageID VALUES (@uid, @cid, @tit, @desc, @url)');
+            .query('INSERT INTO Images (UserID, CategoryID, Description, ImageURL) OUTPUT INSERTED.ImageID VALUES (@uid, @cid, @desc, @url)');
 
         const newImageId = imgRes.recordset[0].ImageID;
 
@@ -522,7 +519,7 @@ app.get('/api/images/:categoryName', async (req, res) => {
         const result = await pool.request()
             .input('cat', sql.NVarChar, req.params.categoryName)
             .query(`
-                SELECT i.ImageID, i.Title, i.Description, i.ImageURL, u.Username,
+                SELECT i.ImageID, i.Description, i.ImageURL, u.Username,
                        (SELECT COUNT(*) FROM Likes WHERE ImageID = i.ImageID) as LikesCount
                 FROM Images i
                 JOIN Categories c ON i.CategoryID = c.CategoryID

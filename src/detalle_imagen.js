@@ -40,14 +40,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 3. ENVIAR COMENTARIO
     document.getElementById('comment-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         if (user.role === 'guest') {
             await showAlert('Debes iniciar sesión para comentar', 'Iniciar sesión', 'info');
             return;
         }
 
         const text = e.target.text.value.trim();
-        
+
         if (!text) {
             await showAlert('Por favor escribe un comentario', 'Comentario vacío', 'info');
             return;
@@ -62,16 +62,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 },
                 body: JSON.stringify({ imageId: currentImageId, text })
             });
-            
+
             const data = await res.json();
-            
+
             if (res.ok) {
                 e.target.reset();
                 loadComments(currentImageId);
             } else {
                 await showAlert(data.error || 'Error al publicar comentario', 'Error', 'error');
             }
-        } catch (error) { 
+        } catch (error) {
             console.error('Error al enviar comentario:', error);
             await showAlert('Error de conexión. Intenta nuevamente.', 'Error', 'error');
         }
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
     const closeBtn = document.getElementById('close-btn');
-    
+
     // Botón cerrar
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
     }
-    
+
     if (prevBtn && nextBtn) {
         console.log('Botones de navegación encontrados');
         prevBtn.addEventListener('click', () => {
@@ -138,9 +138,9 @@ async function loadCategoryImages(categoryId, currentImageId) {
         console.log('Cargando imágenes de categoría:', categoryId);
         const res = await fetch(`${API_URL}/api/images/${categoryId}`);
         const data = await res.json();
-        
+
         console.log('Imágenes recibidas:', data);
-        
+
         if (res.ok && data && data.length > 0) {
             allImages = data;
             currentImageIndex = allImages.findIndex(img => img.ImageID == currentImageId);
@@ -158,16 +158,16 @@ async function loadCategoryImages(categoryId, currentImageId) {
 function updateNavigationButtons() {
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
-    
+
     if (allImages.length === 0) {
         prevBtn.style.display = 'none';
         nextBtn.style.display = 'none';
         return;
     }
-    
+
     prevBtn.disabled = currentImageIndex <= 0;
     nextBtn.disabled = currentImageIndex >= allImages.length - 1;
-    
+
     prevBtn.style.display = 'flex';
     nextBtn.style.display = 'flex';
 }
@@ -178,24 +178,24 @@ async function navigateToPrevious() {
         currentImageIndex--;
         const prevImage = allImages[currentImageIndex];
         currentImageId = prevImage.ImageID; // Actualizar ID actual
-        
+
         console.log('Navegando a imagen anterior:', prevImage);
-        
+
         await loadImageDetail(prevImage.ImageID);
         await loadComments(prevImage.ImageID);
-        
+
         if (user.role !== 'guest') {
             await loadLikeStatus(prevImage.ImageID);
         } else {
             await loadLikeCount(prevImage.ImageID);
         }
-        
+
         // Actualizar URL sin recargar la página
         const params = new URLSearchParams(window.location.search);
         const categoryId = params.get('categoryId');
         const newUrl = `detalle_imagen.html?id=${prevImage.ImageID}&categoryId=${categoryId}`;
         window.history.pushState({ imageId: prevImage.ImageID }, '', newUrl);
-        
+
         updateNavigationButtons();
     }
 }
@@ -206,24 +206,24 @@ async function navigateToNext() {
         currentImageIndex++;
         const nextImage = allImages[currentImageIndex];
         currentImageId = nextImage.ImageID; // Actualizar ID actual
-        
+
         console.log('Navegando a imagen siguiente:', nextImage);
-        
+
         await loadImageDetail(nextImage.ImageID);
         await loadComments(nextImage.ImageID);
-        
+
         if (user.role !== 'guest') {
             await loadLikeStatus(nextImage.ImageID);
         } else {
             await loadLikeCount(nextImage.ImageID);
         }
-        
+
         // Actualizar URL sin recargar la página
         const params = new URLSearchParams(window.location.search);
         const categoryId = params.get('categoryId');
         const newUrl = `detalle_imagen.html?id=${nextImage.ImageID}&categoryId=${categoryId}`;
         window.history.pushState({ imageId: nextImage.ImageID }, '', newUrl);
-        
+
         updateNavigationButtons();
     }
 }
@@ -248,7 +248,7 @@ async function loadImageDetail(imageId) {
     if (infoSection) {
         infoSection.scrollTop = 0;
     }
-    
+
     // 1. CARGAR INFO E IMAGEN
     try {
         const res = await fetch(`${API_URL}/api/image-detail/${imageId}`);
@@ -258,7 +258,7 @@ async function loadImageDetail(imageId) {
 
         // Renderizar Info
         document.getElementById('det-img').src = data.image.ImageURL;
-        document.getElementById('det-title').textContent = data.image.Title;
+        //document.getElementById('det-title').textContent = data.image.Title;
         document.getElementById('det-desc').textContent = data.image.Description;
         document.getElementById('det-user').textContent = data.image.Username;
 
@@ -274,16 +274,16 @@ async function loadImageDetail(imageId) {
         data.songs.forEach(song => {
             const div = document.createElement('div');
             div.className = 'song-item';
-            
+
             // Contenedor de información de la canción
             const songInfo = document.createElement('div');
             songInfo.className = 'song-info';
-            
+
             // Título de la canción
             const titleDiv = document.createElement('div');
             titleDiv.innerHTML = `<strong>${song.Title}</strong>`;
             songInfo.appendChild(titleDiv);
-            
+
             // Botón de escuchar con icono de play
             const listenLink = document.createElement('a');
             listenLink.href = 'javascript:void(0)';
@@ -297,15 +297,15 @@ async function loadImageDetail(imageId) {
                 Escuchar
             `;
             songInfo.appendChild(listenLink);
-            
+
             // Votos
             const votesDiv = document.createElement('div');
             votesDiv.className = 'song-votes';
             votesDiv.textContent = `${song.Votes} votos`;
             songInfo.appendChild(votesDiv);
-            
+
             div.appendChild(songInfo);
-            
+
             // Botón de votar (solo si no es guest)
             if (user.role !== 'guest') {
                 const voteBtn = document.createElement('button');
@@ -314,14 +314,14 @@ async function loadImageDetail(imageId) {
                 voteBtn.onclick = () => votar(imageId, song.SongID);
                 div.appendChild(voteBtn);
             }
-            
+
             songsList.appendChild(div);
         });
 
         console.log('Imagen cargada:', imageId, data.image.Title);
 
-    } catch (e) { 
-        console.error('Error al cargar imagen:', e); 
+    } catch (e) {
+        console.error('Error al cargar imagen:', e);
     }
 }
 
@@ -331,46 +331,46 @@ async function loadImageDetail(imageId) {
 // ==============================================================================
 function getTimeAgo(timestamp) {
     if (!timestamp) return 'Hace un momento';
-    
+
     const now = new Date();
     const commentDate = new Date(timestamp);
     const diffInSeconds = Math.floor((now - commentDate) / 1000);
-    
+
     // Menos de 1 minuto
     if (diffInSeconds < 60) {
         return 'Justo ahora';
     }
-    
+
     // Menos de 1 hora
     const diffInMinutes = Math.floor(diffInSeconds / 60);
     if (diffInMinutes < 60) {
         return `Hace ${diffInMinutes} ${diffInMinutes === 1 ? 'minuto' : 'minutos'}`;
     }
-    
+
     // Menos de 24 horas
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) {
         return `Hace ${diffInHours} ${diffInHours === 1 ? 'hora' : 'horas'}`;
     }
-    
+
     // Menos de 7 días
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) {
         return `Hace ${diffInDays} ${diffInDays === 1 ? 'día' : 'días'}`;
     }
-    
+
     // Menos de 30 días
     if (diffInDays < 30) {
         const diffInWeeks = Math.floor(diffInDays / 7);
         return `Hace ${diffInWeeks} ${diffInWeeks === 1 ? 'semana' : 'semanas'}`;
     }
-    
+
     // Menos de 365 días
     if (diffInDays < 365) {
         const diffInMonths = Math.floor(diffInDays / 30);
         return `Hace ${diffInMonths} ${diffInMonths === 1 ? 'mes' : 'meses'}`;
     }
-    
+
     // Más de un año - mostrar fecha exacta
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return commentDate.toLocaleDateString('es-ES', options);
@@ -393,28 +393,28 @@ async function loadComments(imageId) {
         const div = document.createElement('div');
         div.className = 'comment';
         div.setAttribute('data-comment-id', c.CommentID);
-        
+
         // Avatar del usuario
         const avatar = document.createElement('div');
         avatar.className = 'comment-avatar';
         avatar.textContent = c.Username ? c.Username.charAt(0).toUpperCase() : 'U';
         div.appendChild(avatar);
-        
+
         // Cuerpo del comentario
         const commentBody = document.createElement('div');
         commentBody.className = 'comment-body';
-        
+
         // Header con nombre de usuario y menú (si aplica)
         const commentHeader = document.createElement('div');
         commentHeader.className = 'comment-header';
-        
+
         // Contenido del comentario
         const contentDiv = document.createElement('div');
         contentDiv.className = 'comment-content';
         contentDiv.innerHTML = `<strong>${c.Username}</strong> <span>${c.Content}</span>`;
-        
+
         commentHeader.appendChild(contentDiv);
-        
+
         // ==============================================================================
         // O10H5: Mostrar menú de opciones solo si el comentario pertenece al usuario
         // ==============================================================================
@@ -422,7 +422,7 @@ async function loadComments(imageId) {
         if (user && user.userId === c.UserID) {
             const menuContainer = document.createElement('div');
             menuContainer.className = 'comment-menu-container';
-            
+
             // Botón de tres puntos
             const menuBtn = document.createElement('button');
             menuBtn.className = 'comment-menu-btn';
@@ -431,7 +431,7 @@ async function loadComments(imageId) {
                 e.stopPropagation();
                 toggleCommentMenu(c.CommentID);
             };
-            
+
             // Menú desplegable
             const dropdown = document.createElement('div');
             dropdown.className = 'comment-dropdown';
@@ -444,7 +444,7 @@ async function loadComments(imageId) {
                     Eliminar
                 </button>
             `;
-            
+
             // Event listeners para las opciones del menú
             dropdown.querySelector('[data-action="edit"]').onclick = (e) => {
                 e.currentTarget.classList.add('active');
@@ -453,7 +453,7 @@ async function loadComments(imageId) {
                     editComment(c.CommentID, c.Content, imageId);
                 }, 150);
             };
-            
+
             dropdown.querySelector('[data-action="delete"]').onclick = (e) => {
                 e.currentTarget.classList.add('active');
                 setTimeout(() => {
@@ -461,20 +461,20 @@ async function loadComments(imageId) {
                     deleteComment(c.CommentID, imageId);
                 }, 150);
             };
-            
+
             menuContainer.appendChild(menuBtn);
             menuContainer.appendChild(dropdown);
             commentHeader.appendChild(menuContainer);
         }
-        
+
         commentBody.appendChild(commentHeader);
-        
+
         // Hora del comentario con tiempo transcurrido real
         const timeDiv = document.createElement('div');
         timeDiv.className = 'comment-time';
         timeDiv.textContent = getTimeAgo(c.CreatedAt || c.Timestamp || c.Date);
         commentBody.appendChild(timeDiv);
-        
+
         div.appendChild(commentBody);
         list.appendChild(div);
     });
@@ -487,10 +487,10 @@ async function loadComments(imageId) {
 function toggleCommentMenu(commentId) {
     const dropdown = document.getElementById(`dropdown-${commentId}`);
     const isActive = dropdown.classList.contains('show');
-    
+
     // Cerrar todos los menús
     closeAllMenus();
-    
+
     // Si no estaba activo, abrirlo
     if (!isActive) {
         dropdown.classList.add('show');
@@ -518,10 +518,10 @@ document.addEventListener('click', (e) => {
 function editComment(commentId, currentContent, imageId) {
     const commentDiv = document.querySelector(`[data-comment-id="${commentId}"]`);
     if (!commentDiv) return;
-    
+
     // Guardar el contenido original
     const originalHTML = commentDiv.innerHTML;
-    
+
     // Crear el formulario de edición inline
     commentDiv.innerHTML = `
         <div class="comment-edit-form">
@@ -532,21 +532,21 @@ function editComment(commentId, currentContent, imageId) {
             </div>
         </div>
     `;
-    
+
     // Enfocar el textarea
     const textarea = document.getElementById(`edit-input-${commentId}`);
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-    
+
     // Botón Guardar
     document.getElementById(`save-${commentId}`).onclick = async () => {
         const newContent = textarea.value.trim();
-        
+
         if (!newContent) {
             await showAlert('El comentario no puede estar vacío', 'Campo vacío', 'info');
             return;
         }
-        
+
         try {
             const res = await fetch(`${API_URL}/api/comments/${commentId}`, {
                 method: 'PUT',
@@ -556,9 +556,9 @@ function editComment(commentId, currentContent, imageId) {
                 },
                 body: JSON.stringify({ text: newContent })
             });
-            
+
             const data = await res.json();
-            
+
             if (res.ok) {
                 loadComments(imageId); // Recargar comentarios
             } else {
@@ -569,7 +569,7 @@ function editComment(commentId, currentContent, imageId) {
             await showAlert('Error al editar el comentario', 'Error', 'error');
         }
     };
-    
+
     // Botón Cancelar
     document.getElementById(`cancel-${commentId}`).onclick = () => {
         commentDiv.innerHTML = originalHTML;
@@ -590,11 +590,11 @@ async function deleteComment(commentId, imageId) {
         '¿Estás seguro de que deseas eliminar este comentario? Esta acción no se puede deshacer.',
         'Eliminar comentario'
     );
-    
+
     if (!confirmed) {
         return;
     }
-    
+
     try {
         const res = await fetch(`${API_URL}/api/comments/${commentId}`, {
             method: 'DELETE',
@@ -602,9 +602,9 @@ async function deleteComment(commentId, imageId) {
                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
             }
         });
-        
+
         const data = await res.json();
-        
+
         if (res.ok) {
             await showAlert('Comentario eliminado exitosamente', 'Eliminado', 'success');
             loadComments(imageId); // Recargar comentarios
@@ -642,12 +642,12 @@ async function loadLikeStatus(imageId) {
                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
             }
         });
-        
+
         if (res.ok) {
             const data = await res.json();
             console.log('Estado de likes recibido:', data);
             updateLikeUI(data.totalLikes, data.userLiked);
-            
+
             // Agregar evento al botón solo una vez
             const likeButton = document.getElementById('like-button');
             if (!likeButton.dataset.listenerAdded) {
@@ -670,7 +670,7 @@ async function loadLikeCount(imageId) {
                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
             }
         });
-        
+
         if (res.ok) {
             const data = await res.json();
             updateLikeUI(data.totalLikes, false);
@@ -694,7 +694,7 @@ async function toggleLike(imageId) {
             },
             body: JSON.stringify({ imageId })
         });
-        
+
         if (res.ok) {
             const data = await res.json();
             console.log('Toggle response:', data);
@@ -712,9 +712,9 @@ async function toggleLike(imageId) {
 function updateLikeUI(totalLikes, userLiked) {
     const heartIcon = document.getElementById('heart-icon');
     const likesCount = document.getElementById('likes-count');
-    
+
     console.log('Actualizando UI - Total likes:', totalLikes, 'User liked:', userLiked);
-    
+
     // Actualizar corazón
     if (userLiked) {
         heartIcon.classList.remove('not-liked');
@@ -723,7 +723,7 @@ function updateLikeUI(totalLikes, userLiked) {
         heartIcon.classList.remove('liked');
         heartIcon.classList.add('not-liked');
     }
-    
+
     // Actualizar contador
     const texto = totalLikes === 1 ? 'me gusta' : 'me gusta';
     likesCount.textContent = `${totalLikes} ${texto}`;
@@ -736,61 +736,61 @@ function extraerIdYoutube(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-window.abrirModalYoutube = async function(url, titulo) {
+window.abrirModalYoutube = async function (url, titulo) {
     const videoId = extraerIdYoutube(url);
-    
+
     if (!videoId) {
         await showAlert('URL de YouTube no válida', 'Error', 'error');
         return;
     }
-    
+
     const modal = document.getElementById('youtube-modal');
     const iframe = document.getElementById('youtube-iframe');
     const modalTitle = document.getElementById('youtube-modal-title');
-    
+
     // Ocultar botón X y botones de navegación
     const closeBtn = document.getElementById('close-btn');
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
-    
+
     if (closeBtn) closeBtn.style.display = 'none';
     if (prevBtn) prevBtn.style.display = 'none';
     if (nextBtn) nextBtn.style.display = 'none';
-    
+
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    
+
     iframe.src = embedUrl;
     modalTitle.textContent = titulo;
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
 
-window.cerrarModalYoutube = function() {
+window.cerrarModalYoutube = function () {
     const modal = document.getElementById('youtube-modal');
     const iframe = document.getElementById('youtube-iframe');
-    
+
     // Mostrar botón X y botones de navegación nuevamente
     const closeBtn = document.getElementById('close-btn');
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
-    
+
     if (closeBtn) closeBtn.style.display = 'flex';
     if (prevBtn) prevBtn.style.display = 'flex';
     if (nextBtn) nextBtn.style.display = 'flex';
-    
+
     iframe.src = '';
     modal.style.display = 'none';
     document.body.style.overflow = 'auto';
 }
 
-window.onclick = function(event) {
+window.onclick = function (event) {
     const modal = document.getElementById('youtube-modal');
     if (event.target === modal) {
         cerrarModalYoutube();
     }
 }
 
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     const modal = document.getElementById('youtube-modal');
     if (modal.style.display === 'block' && event.key === 'Escape') {
         cerrarModalYoutube();
@@ -802,53 +802,53 @@ document.addEventListener('keydown', function(event) {
 // ===============================================================================
 
 // Función para mostrar modal de confirmación
-window.showConfirm = function(message, title = '¿Estás seguro?') {
+window.showConfirm = function (message, title = '¿Estás seguro?') {
     return new Promise((resolve) => {
         const overlay = document.getElementById('custom-modal-overlay');
         const icon = document.getElementById('custom-modal-icon');
         const titleEl = document.getElementById('custom-modal-title');
         const messageEl = document.getElementById('custom-modal-message');
         const buttonsContainer = document.getElementById('custom-modal-buttons');
-        
+
         // Configurar icono
         icon.className = 'custom-modal-icon warning';
         icon.innerHTML = '⚠';
-        
+
         // Configurar contenido
         titleEl.textContent = title;
         messageEl.textContent = message;
-        
+
         // Crear botones
         buttonsContainer.innerHTML = `
             <button class="custom-modal-btn cancel" id="modal-cancel">Cancelar</button>
             <button class="custom-modal-btn confirm" id="modal-confirm">Confirmar</button>
         `;
-        
+
         // Event listeners
         document.getElementById('modal-cancel').onclick = () => {
             overlay.classList.remove('active');
             resolve(false);
         };
-        
+
         document.getElementById('modal-confirm').onclick = () => {
             overlay.classList.remove('active');
             resolve(true);
         };
-        
+
         // Mostrar modal
         overlay.classList.add('active');
     });
 };
 
 // Función para mostrar alertas personalizadas
-window.showAlert = function(message, title = 'Información', type = 'info') {
+window.showAlert = function (message, title = 'Información', type = 'info') {
     return new Promise((resolve) => {
         const overlay = document.getElementById('custom-modal-overlay');
         const icon = document.getElementById('custom-modal-icon');
         const titleEl = document.getElementById('custom-modal-title');
         const messageEl = document.getElementById('custom-modal-message');
         const buttonsContainer = document.getElementById('custom-modal-buttons');
-        
+
         // Configurar icono según el tipo
         if (type === 'success') {
             icon.className = 'custom-modal-icon success';
@@ -860,22 +860,22 @@ window.showAlert = function(message, title = 'Información', type = 'info') {
             icon.className = 'custom-modal-icon info';
             icon.innerHTML = 'ℹ';
         }
-        
+
         // Configurar contenido
         titleEl.textContent = title;
         messageEl.textContent = message;
-        
+
         // Crear botón
         buttonsContainer.innerHTML = `
             <button class="custom-modal-btn ok" id="modal-ok">Aceptar</button>
         `;
-        
+
         // Event listener
         document.getElementById('modal-ok').onclick = () => {
             overlay.classList.remove('active');
             resolve(true);
         };
-        
+
         // Mostrar modal
         overlay.classList.add('active');
     });
