@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const btnSuccessOk = document.getElementById('btn-success-ok');
 
     // Mostrar botón de subir solo si es usuario registrado
-    if (user.role !== 'guest' && uploadBtn) {
+    if (user && user.role !== 'guest' && uploadBtn) {
         uploadBtn.style.display = 'block';
         uploadBtn.addEventListener('click', () => {
             uploadModal.style.display = 'flex';
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             // Validar archivo de imagen
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
-            
+
             if (!file) {
                 alert('Por favor selecciona una imagen');
                 return;
@@ -126,8 +126,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                     return; // Detener envío
                 }
 
-                    linksSet.add(link);
-                    songsData.push({ title, link });
+                linksSet.add(link);
+                songsData.push({ title, link });
             }
             formData.append('songs', JSON.stringify(songsData));
 
