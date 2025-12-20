@@ -259,7 +259,8 @@ async function loadImageDetail(imageId) {
         // Renderizar Info
         document.getElementById('det-img').src = data.image.ImageURL;
         //document.getElementById('det-title').textContent = data.image.Title;
-        document.getElementById('det-desc').textContent = data.image.Description;
+        //document.getElementById('det-desc').textContent = data.image.Description;
+        renderImageDescription(data.image, imageId);
         document.getElementById('det-user').textContent = data.image.Username;
 
         // Renderizar inicial del avatar
@@ -324,6 +325,133 @@ async function loadImageDetail(imageId) {
         console.error('Error al cargar imagen:', e);
     }
 }
+//renderizar descripción de la imagen 
+function renderImageDescription(image, imageId) {
+    const descP = document.getElementById('det-desc');
+
+    // Limpiar
+    descP.innerHTML = '';
+    descP.setAttribute('data-image-id', imageId);
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'comment-body';
+
+    const header = document.createElement('div');
+    header.className = 'comment-header';
+
+    // Contenido
+    const content = document.createElement('div');
+    content.className = 'comment-content';
+    content.innerHTML = `
+        <span>${image.Description || 'Sin descripción'}</span>
+    `;
+
+    header.appendChild(content);
+    console.log('Comparando user.userId:', user?.userId, 'con image.UserID:', image.UserID);
+
+    if (user && user.userId === image.UserID) {
+        const menuContainer = document.createElement('div');
+        menuContainer.className = 'comment-menu-container';
+
+        const menuBtn = document.createElement('button');
+        menuBtn.className = 'comment-menu-btn';
+        menuBtn.innerHTML = '⋯';
+        menuBtn.onclick = (e) => {
+            e.stopPropagation();
+            toggleDescriptionMenu(imageId);
+        };
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'comment-dropdown';
+        dropdown.id = `desc-dropdown-${imageId}`;
+        dropdown.innerHTML = `
+            <button class="dropdown-item" data-action="edit">
+                Editar
+            </button>
+        `;
+
+        dropdown.querySelector('[data-action="edit"]').onclick = () => {
+            closeAllMenus();
+            editImageDescription(imageId, image.Description);
+        };
+
+        menuContainer.appendChild(menuBtn);
+        menuContainer.appendChild(dropdown);
+        header.appendChild(menuContainer);
+    }
+
+    body.appendChild(header);
+    descP.appendChild(body);
+}
+
+function toggleDescriptionMenu(imageId) {
+    const dropdown = document.getElementById(`desc-dropdown-${imageId}`);
+    const isActive = dropdown.classList.contains('show');
+
+    closeAllMenus();
+
+    if (!isActive) {
+        dropdown.classList.add('show');
+    }
+}
+
+function editImageDescription(imageId, currentText) {
+    const desc = document.querySelector(`[data-image-id="${imageId}"]`);
+    if (!desc) return;
+
+    const originalHTML = desc.innerHTML;
+
+    desc.innerHTML = `
+        <div class="comment-edit-form">
+            <textarea class="comment-edit-input">${currentText || ''}</textarea>
+            <div class="comment-edit-actions">
+                <button class="btn-save-comment">Guardar</button>
+                <button class="btn-cancel-comment">Cancelar</button>
+            </div>
+        </div>
+    `;
+
+    const textarea = desc.querySelector('textarea');
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    desc.querySelector('.btn-save-comment').onclick = async () => {
+        const newText = textarea.value.trim();
+
+        if (!newText) {
+            await showAlert('La descripción no puede estar vacía', 'Campo vacío', 'info');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/images/${imageId}/description`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+                },
+                body: JSON.stringify({ description: newText })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                loadImageDetail(imageId);
+            } else {
+                await showAlert(data.error || 'Error al editar descripción', 'Error', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            await showAlert('Error al editar descripción', 'Error', 'error');
+        }
+    };
+
+    desc.querySelector('.btn-cancel-comment').onclick = () => {
+        desc.innerHTML = originalHTML;
+    };
+}
+
 
 // ==============================================================================
 // CALCULAR TIEMPO TRANSCURRIDO

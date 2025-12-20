@@ -760,5 +760,51 @@ app.get('/api/like-status/:imageId', authenticateToken, async (req, res) => {
     }
 });
 
+// ==============================================================================
+// EDITAR DESCRIPCIÓN DE IMAGEN (solo propietario)
+// ==============================================================================
+app.put('/api/images/:imageId/description', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const { imageId } = req.params;
+        const { description } = req.body;
+
+        if (!description || description.trim().length === 0) {
+            return res.status(400).json({ error: 'La descripción no puede estar vacía' });
+        }
+
+        // Verificar propietario
+        const checkOwner = await pool.request()
+            .input('iid', sql.Int, imageId)
+            .input('uid', sql.Int, req.user.userId)
+            .query(`
+                SELECT ImageID 
+                FROM Images 
+                WHERE ImageID = @iid AND UserID = @uid
+            `);
+
+        if (checkOwner.recordset.length === 0) {
+            return res.status(403).json({ error: 'No tienes permiso para editar esta descripción' });
+        }
+
+        // Actualizar descripción
+        await pool.request()
+            .input('iid', sql.Int, imageId)
+            .input('desc', sql.NVarChar, description)
+            .query(`
+                UPDATE Images
+                SET Description = @desc
+                WHERE ImageID = @iid
+            `);
+
+        res.json({ message: 'Descripción actualizada correctamente' });
+
+    } catch (e) {
+        console.error('Error al editar descripción:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+
 module.exports = app;
 app.listen(PORT, () => console.log(`Backend corriendo en http://localhost:${PORT}`));
