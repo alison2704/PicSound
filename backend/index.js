@@ -657,32 +657,62 @@ app.delete('/api/comments/:commentId', authenticateToken, async (req, res) => {
     }
 });
 
+// ---------------------------------------------------------------------
+// API: Votar por una canción (O17H12 - Solo un voto por imagen)
+// ---------------------------------------------------------------------
 app.post('/api/vote', authenticateToken, async (req, res) => {
+    const { imageId, songId } = req.body;
+    const userId = req.user.userId;
+
+    if (!imageId || !songId) {
+        return res.status(400).json({ error: 'Faltan parámetros de imagen o canción.' });
+    }
+
     try {
         const pool = await poolPromise;
 
-        // Verificar si ya votó
+        // 1. Verificar si el usuario ya tiene un voto registrado en ESTA IMAGEN
+        // (No importa por qué canción sea, buscamos el UserID + ImageID)
         const checkVote = await pool.request()
-            .input('uid', sql.Int, req.user.userId)
-            .input('iid', sql.Int, req.body.imageId)
-            .input('sid', sql.Int, req.body.songId)
-            .query('SELECT * FROM SongVotes WHERE UserID = @uid AND ImageID = @iid AND SongID = @sid');
+            .input('uid', sql.Int, userId)
+            .input('iid', sql.Int, imageId)
+            .query('SELECT SongID FROM SongVotes WHERE UserID = @uid AND ImageID = @iid');
 
         if (checkVote.recordset.length > 0) {
-            return res.status(400).json({ error: 'Ya votaste por esta canción' });
+            const currentSongIdVoted = checkVote.recordset[0].SongID;
+
+            // Si ya votó por la MISMA canción, informamos al usuario
+            if (currentSongIdVoted === parseInt(songId)) {
+                return res.status(400).json({ message: 'Ya has votado por esta canción.' });
+            }
+
+            // 2. Si ya votó por OTRA canción de la misma imagen, ACTUALIZAMOS el voto
+            // Esto cumple el criterio de "cambiar el voto por otra canción"
+            await pool.request()
+                .input('uid', sql.Int, userId)
+                .input('iid', sql.Int, imageId)
+                .input('sid', sql.Int, songId)
+                .query(`
+                    UPDATE SongVotes 
+                    SET SongID = @sid, CreatedAt = SYSUTCDATETIME() 
+                    WHERE UserID = @uid AND ImageID = @iid
+                `);
+
+            return res.json({ success: true, message: 'Tu voto ha sido cambiado con éxito.' });
         }
 
-        // Registrar el voto
+        // 3. Si no ha votado nunca en esta imagen, REGISTRAMOS un nuevo voto
         await pool.request()
-            .input('uid', sql.Int, req.user.userId)
-            .input('iid', sql.Int, req.body.imageId)
-            .input('sid', sql.Int, req.body.songId)
+            .input('uid', sql.Int, userId)
+            .input('iid', sql.Int, imageId)
+            .input('sid', sql.Int, songId)
             .query('INSERT INTO SongVotes (UserID, ImageID, SongID) VALUES (@uid, @iid, @sid)');
 
-        res.json({ message: 'Voto registrado exitosamente' });
+        res.json({ success: true, message: 'Voto registrado exitosamente.' });
+
     } catch (e) {
-        console.error('Error al votar:', e);
-        res.status(500).json({ error: 'Error al procesar el voto' });
+        console.error('Error al procesar el voto:', e);
+        res.status(500).json({ error: 'Error interno al procesar el voto.' });
     }
 });
 
