@@ -325,6 +325,7 @@ async function loadImageDetail(imageId) {
         console.error('Error al cargar imagen:', e);
     }
 }
+
 //renderizar descripción de la imagen 
 function renderImageDescription(image, imageId) {
     const descP = document.getElementById('det-desc');
@@ -367,14 +368,55 @@ function renderImageDescription(image, imageId) {
         dropdown.id = `desc-dropdown-${imageId}`;
         dropdown.innerHTML = `
             <button class="dropdown-item" data-action="edit">
-                Editar
+                Editar descripción
+            </button>
+            <button class="dropdown-item delete" data-action="delete">
+                Eliminar publicación
             </button>
         `;
 
+        //editar descripción de la imagen
         dropdown.querySelector('[data-action="edit"]').onclick = () => {
             closeAllMenus();
             editImageDescription(imageId, image.Description);
         };
+        // Eliminar publicación
+        dropdown.querySelector('[data-action="delete"]').onclick = async () => {
+            closeAllMenus();
+
+            const confirmed = await showConfirm(
+                '¿Eliminar publicación?',
+                'Esta acción eliminará la imagen, comentarios, canciones y likes. No se puede deshacer.',
+                'warning'
+            );
+
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`${API_URL}/api/images/${imageId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+                    }
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    await showAlert('Publicación eliminada correctamente', 'Éxito', 'success');
+                    const params = new URLSearchParams(window.location.search);
+                    const categoryId = params.get('categoryId');
+                    window.location.href = `category.html?id=${categoryId}`;
+
+                } else {
+                    await showAlert(data.error || 'No se pudo eliminar la publicación', 'Error', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                await showAlert('Error de conexión', 'Error', 'error');
+            }
+        };
+
 
         menuContainer.appendChild(menuBtn);
         menuContainer.appendChild(dropdown);

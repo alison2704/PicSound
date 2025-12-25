@@ -835,6 +835,67 @@ app.put('/api/images/:imageId/description', authenticateToken, async (req, res) 
     }
 });
 
+// ======================================================
+// ELIMINAR PUBLICACIÓN (solo dueño) 08H13 
+// ======================================================
+app.delete('/api/images/:id', authenticateToken, async (req, res) => {
+    const imageId = parseInt(req.params.id, 10);
+    const userId = req.user.userId;
+
+    if (isNaN(imageId)) {
+        return res.status(400).json({ error: 'ID de imagen inválido' });
+    }
+
+    try {
+        // 🔑 CLAVE: obtener pool desde poolPromise
+        const pool = await poolPromise;
+
+        // 1️⃣ Verificar existencia y dueño
+        const imageResult = await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query(`
+                SELECT UserID
+                FROM Images
+                WHERE ImageID = @imageId
+            `);
+
+        if (imageResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'Publicación no encontrada' });
+        }
+
+        if (imageResult.recordset[0].UserID !== userId) {
+            return res.status(403).json({ error: 'No autorizado para eliminar esta publicación' });
+        }
+
+        // 2️⃣ Eliminación en orden correcto
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Likes WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Comments WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM SongVotes WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM ImageSongs WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Images WHERE ImageID = @imageId');
+
+        res.json({ message: 'Publicación eliminada correctamente' });
+
+    } catch (err) {
+        console.error('Error al eliminar publicación:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
 
 module.exports = app;
 app.listen(PORT, () => console.log(`Backend corriendo en http://localhost:${PORT}`));
