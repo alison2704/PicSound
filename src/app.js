@@ -87,8 +87,8 @@ function handleLogout() {
     // 1. Limpiar token
     localStorage.removeItem('jwtToken');
 
-    // 2. Redirigir (La página se refrescará y app.js mostrará el estado 'guest')
-    window.location.reload();
+    // 2. Redirigir al index.html
+    window.location.href = 'index.html';
 }
 // Inicializar al cargar el DOM
 document.addEventListener("DOMContentLoaded", renderNavActions);

@@ -88,19 +88,14 @@
         </div>
     </div>  
 
+    <script src="src/app.js"></script>
     <script>
         const API_URL = 'http://localhost:4000';
         const jwtToken = localStorage.getItem('jwtToken');
         let currentUserData = {};
 
         // Función para manejar el cierre de sesión
-        document.getElementById('logout-perfil').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (confirm("¿Estás seguro de que quieres cerrar la sesión?")) {
-                localStorage.removeItem('jwtToken');
-                window.location.href = 'index.html';
-            }
-        });
+        document.getElementById('logout-perfil').addEventListener('click', handleLogoutConfirm);
 
         // Modal functionality
         const modal = document.getElementById('edit-modal');

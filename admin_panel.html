@@ -62,13 +62,7 @@
         const jwtToken = localStorage.getItem('jwtToken');
 
         // Lógica de Cerrar Sesión (Reutiliza app.js)
-        document.getElementById('logout-admin').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (confirm("¿Estás seguro de que quieres cerrar la sesión?")) {
-                localStorage.removeItem('jwtToken');
-                window.location.href = 'index.html';
-            }
-        });
+        document.getElementById('logout-admin').addEventListener('click', handleLogoutConfirm);
 
         // LÓGICA DINÁMICA DE CARGA DEL DASHBOARD
         document.addEventListener("DOMContentLoaded", async function () {

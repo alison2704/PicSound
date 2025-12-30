@@ -27,6 +27,13 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
+    // Mostrar botón de cerrar sesión solo si está autenticado
+    const logoutBtn = document.getElementById('logout-category');
+    if (user && user.role !== 'guest' && logoutBtn) {
+        logoutBtn.style.display = 'inline-block';
+        logoutBtn.addEventListener('click', handleLogoutConfirm);
+    }
+
     // Cerrar modal de formulario
     if (closeModalBtn) {
         closeModalBtn.addEventListener('click', () => uploadModal.style.display = 'none');
