@@ -99,7 +99,14 @@ document.addEventListener("DOMContentLoaded", async function () {
             formData.append('image', file);
             formData.append('title', form.title.value);
             formData.append('description', form.description.value);
-            formData.append('category', categoryName); // El backend necesita el nombre para buscar el ID internamente (según tu código backend actual)
+            
+            // Validar que tengamos un categoryId válido
+            if (!categoryId) {
+                alert('Error: No se puede subir imagen sin una categoría válida. Por favor, accede desde una categoría específica.');
+                return;
+            }
+            
+            formData.append('category', categoryName); // El backend busca por nombre
 
             // Recopilar Canciones
             const titles = document.querySelectorAll('.song-title');

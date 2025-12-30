@@ -358,6 +358,194 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
+// ==============================================================================
+// RUTAS DE EDICIÓN Y ELIMINACIÓN (deben ir ANTES de las rutas GET con parámetros)
+// ==============================================================================
+
+// EDITAR PUBLICACIÓN COMPLETA (descripción y canciones)
+app.put('/api/images/:imageId', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const { imageId } = req.params;
+        const { description, songs } = req.body;
+
+        console.log('PUT /api/images/:imageId - Datos recibidos:', { imageId, description, songs });
+
+        if (!description || description.trim().length === 0) {
+            return res.status(400).json({ error: 'La descripción no puede estar vacía' });
+        }
+
+        // Verificar propietario
+        const checkOwner = await pool.request()
+            .input('iid', sql.Int, imageId)
+            .input('uid', sql.Int, req.user.userId)
+            .query(`
+                SELECT ImageID 
+                FROM Images 
+                WHERE ImageID = @iid AND UserID = @uid
+            `);
+
+        if (checkOwner.recordset.length === 0) {
+            return res.status(403).json({ error: 'No tienes permiso para editar esta publicación' });
+        }
+
+        // Actualizar descripción
+        const updateResult = await pool.request()
+            .input('iid', sql.Int, imageId)
+            .input('desc', sql.NVarChar, description)
+            .query(`
+                UPDATE Images
+                SET Description = @desc
+                WHERE ImageID = @iid
+            `);
+
+        console.log('Descripción actualizada. Filas afectadas:', updateResult.rowsAffected);
+
+        // Actualizar canciones si se proporcionaron
+        if (songs && Array.isArray(songs) && songs.length > 0) {
+            // Obtener canciones actuales asociadas a esta imagen
+            const currentSongs = await pool.request()
+                .input('iid', sql.Int, imageId)
+                .query(`
+                    SELECT s.SongID, s.Title, s.ExternalURL, isg.Position
+                    FROM Songs s
+                    INNER JOIN ImageSongs isg ON s.SongID = isg.SongID
+                    WHERE isg.ImageID = @iid
+                    ORDER BY isg.Position
+                `);
+
+            console.log('Canciones actuales:', currentSongs.recordset.length);
+
+            // Actualizar cada canción
+            for (let i = 0; i < Math.min(songs.length, currentSongs.recordset.length); i++) {
+                const song = songs[i];
+                const currentSong = currentSongs.recordset[i];
+
+                if (song.title && song.url) {
+                    const songUpdateResult = await pool.request()
+                        .input('sid', sql.Int, currentSong.SongID)
+                        .input('title', sql.NVarChar, song.title)
+                        .input('url', sql.NVarChar, song.url)
+                        .query(`
+                            UPDATE Songs
+                            SET Title = @title, ExternalURL = @url
+                            WHERE SongID = @sid
+                        `);
+                    console.log(`Canción ${i + 1} actualizada. Filas afectadas:`, songUpdateResult.rowsAffected);
+                }
+            }
+        }
+
+        console.log('Publicación actualizada correctamente');
+        res.json({ message: 'Publicación actualizada correctamente' });
+
+    } catch (e) {
+        console.error('Error al editar publicación:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// EDITAR SOLO DESCRIPCIÓN (mantener compatibilidad)
+app.put('/api/images/:imageId/description', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const { imageId } = req.params;
+        const { description } = req.body;
+
+        if (!description || description.trim().length === 0) {
+            return res.status(400).json({ error: 'La descripción no puede estar vacía' });
+        }
+
+        // Verificar propietario
+        const checkOwner = await pool.request()
+            .input('iid', sql.Int, imageId)
+            .input('uid', sql.Int, req.user.userId)
+            .query(`
+                SELECT ImageID 
+                FROM Images 
+                WHERE ImageID = @iid AND UserID = @uid
+            `);
+
+        if (checkOwner.recordset.length === 0) {
+            return res.status(403).json({ error: 'No tienes permiso para editar esta descripción' });
+        }
+
+        // Actualizar descripción
+        await pool.request()
+            .input('iid', sql.Int, imageId)
+            .input('desc', sql.NVarChar, description)
+            .query(`
+                UPDATE Images
+                SET Description = @desc
+                WHERE ImageID = @iid
+            `);
+
+        res.json({ message: 'Descripción actualizada correctamente' });
+
+    } catch (e) {
+        console.error('Error al editar descripción:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ELIMINAR PUBLICACIÓN (solo dueño)
+app.delete('/api/images/:id', authenticateToken, async (req, res) => {
+    const imageId = parseInt(req.params.id, 10);
+    const userId = req.user.userId;
+
+    if (isNaN(imageId)) {
+        return res.status(400).json({ error: 'ID de imagen inválido' });
+    }
+
+    try {
+        const pool = await poolPromise;
+
+        // Verificar existencia y dueño
+        const imageResult = await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query(`
+                SELECT UserID
+                FROM Images
+                WHERE ImageID = @imageId
+            `);
+
+        if (imageResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'Publicación no encontrada' });
+        }
+
+        if (imageResult.recordset[0].UserID !== userId) {
+            return res.status(403).json({ error: 'No autorizado para eliminar esta publicación' });
+        }
+
+        // Eliminación en orden correcto
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Likes WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Comments WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM SongVotes WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM ImageSongs WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Images WHERE ImageID = @imageId');
+
+        res.json({ message: 'Publicación eliminada correctamente' });
+
+    } catch (err) {
+        console.error('Error al eliminar publicación:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
 
 // ---------------------------------------------------------------------
 // RUTA: /api/images/:categoryId (FEED DINÁMICO - O4H8)
@@ -787,112 +975,6 @@ app.get('/api/like-status/:imageId', authenticateToken, async (req, res) => {
     } catch (e) {
         console.error('Error al obtener like status:', e);
         res.status(500).json({ error: 'Error al obtener estado del like' });
-    }
-});
-
-// ==============================================================================
-// EDITAR DESCRIPCIÓN DE IMAGEN (solo propietario)
-// ==============================================================================
-app.put('/api/images/:imageId/description', authenticateToken, async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const { imageId } = req.params;
-        const { description } = req.body;
-
-        if (!description || description.trim().length === 0) {
-            return res.status(400).json({ error: 'La descripción no puede estar vacía' });
-        }
-
-        // Verificar propietario
-        const checkOwner = await pool.request()
-            .input('iid', sql.Int, imageId)
-            .input('uid', sql.Int, req.user.userId)
-            .query(`
-                SELECT ImageID 
-                FROM Images 
-                WHERE ImageID = @iid AND UserID = @uid
-            `);
-
-        if (checkOwner.recordset.length === 0) {
-            return res.status(403).json({ error: 'No tienes permiso para editar esta descripción' });
-        }
-
-        // Actualizar descripción
-        await pool.request()
-            .input('iid', sql.Int, imageId)
-            .input('desc', sql.NVarChar, description)
-            .query(`
-                UPDATE Images
-                SET Description = @desc
-                WHERE ImageID = @iid
-            `);
-
-        res.json({ message: 'Descripción actualizada correctamente' });
-
-    } catch (e) {
-        console.error('Error al editar descripción:', e);
-        res.status(500).json({ error: e.message });
-    }
-});
-
-// ======================================================
-// ELIMINAR PUBLICACIÓN (solo dueño) 08H13 
-// ======================================================
-app.delete('/api/images/:id', authenticateToken, async (req, res) => {
-    const imageId = parseInt(req.params.id, 10);
-    const userId = req.user.userId;
-
-    if (isNaN(imageId)) {
-        return res.status(400).json({ error: 'ID de imagen inválido' });
-    }
-
-    try {
-        // 🔑 CLAVE: obtener pool desde poolPromise
-        const pool = await poolPromise;
-
-        // 1️⃣ Verificar existencia y dueño
-        const imageResult = await pool.request()
-            .input('imageId', sql.Int, imageId)
-            .query(`
-                SELECT UserID
-                FROM Images
-                WHERE ImageID = @imageId
-            `);
-
-        if (imageResult.recordset.length === 0) {
-            return res.status(404).json({ error: 'Publicación no encontrada' });
-        }
-
-        if (imageResult.recordset[0].UserID !== userId) {
-            return res.status(403).json({ error: 'No autorizado para eliminar esta publicación' });
-        }
-
-        // 2️⃣ Eliminación en orden correcto
-        await pool.request()
-            .input('imageId', sql.Int, imageId)
-            .query('DELETE FROM Likes WHERE ImageID = @imageId');
-
-        await pool.request()
-            .input('imageId', sql.Int, imageId)
-            .query('DELETE FROM Comments WHERE ImageID = @imageId');
-
-        await pool.request()
-            .input('imageId', sql.Int, imageId)
-            .query('DELETE FROM SongVotes WHERE ImageID = @imageId');
-
-        await pool.request()
-            .input('imageId', sql.Int, imageId)
-            .query('DELETE FROM ImageSongs WHERE ImageID = @imageId');
-
-        await pool.request()
-            .input('imageId', sql.Int, imageId)
-            .query('DELETE FROM Images WHERE ImageID = @imageId');
-
-        res.json({ message: 'Publicación eliminada correctamente' });
-
-    } catch (err) {
-        console.error('Error al eliminar publicación:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
 

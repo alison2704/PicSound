@@ -329,29 +329,24 @@ async function loadImageDetail(imageId) {
 //renderizar descripción de la imagen 
 function renderImageDescription(image, imageId) {
     const descP = document.getElementById('det-desc');
+    const postMenuContainer = document.getElementById('post-menu-container');
 
     // Limpiar
     descP.innerHTML = '';
     descP.setAttribute('data-image-id', imageId);
+    if (postMenuContainer) {
+        postMenuContainer.innerHTML = '';
+    }
 
-    // Body
-    const body = document.createElement('div');
-    body.className = 'comment-body';
+    // Contenido de la descripción
+    const content = document.createElement('span');
+    content.textContent = image.Description || 'Sin descripción';
+    descP.appendChild(content);
 
-    const header = document.createElement('div');
-    header.className = 'comment-header';
-
-    // Contenido
-    const content = document.createElement('div');
-    content.className = 'comment-content';
-    content.innerHTML = `
-        <span>${image.Description || 'Sin descripción'}</span>
-    `;
-
-    header.appendChild(content);
+    // Verificar si el usuario es el dueño de la publicación
     console.log('Comparando user.userId:', user?.userId, 'con image.UserID:', image.UserID);
 
-    if (user && user.userId === image.UserID) {
+    if (user && user.userId === image.UserID && postMenuContainer) {
         const menuContainer = document.createElement('div');
         menuContainer.className = 'comment-menu-container';
 
@@ -360,81 +355,192 @@ function renderImageDescription(image, imageId) {
         menuBtn.innerHTML = '⋯';
         menuBtn.onclick = (e) => {
             e.stopPropagation();
-            toggleDescriptionMenu(imageId);
+            togglePostMenu(imageId);
         };
 
         const dropdown = document.createElement('div');
         dropdown.className = 'comment-dropdown';
-        dropdown.id = `desc-dropdown-${imageId}`;
+        dropdown.id = `post-dropdown-${imageId}`;
         dropdown.innerHTML = `
             <button class="dropdown-item" data-action="edit">
-                Editar descripción
+                Editar publicación
             </button>
             <button class="dropdown-item delete" data-action="delete">
                 Eliminar publicación
             </button>
         `;
 
-        //editar descripción de la imagen
+        // Editar publicación completa
         dropdown.querySelector('[data-action="edit"]').onclick = () => {
             closeAllMenus();
-            editImageDescription(imageId, image.Description);
+            openEditPostModal(imageId, image);
         };
+        
         // Eliminar publicación
         dropdown.querySelector('[data-action="delete"]').onclick = async () => {
             closeAllMenus();
-
-            const confirmed = await showConfirm(
-                '¿Eliminar publicación?',
-                'Esta acción eliminará la imagen, comentarios, canciones y likes. No se puede deshacer.',
-                'warning'
-            );
-
-            if (!confirmed) return;
-
-            try {
-                const res = await fetch(`${API_URL}/api/images/${imageId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-                    }
-                });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    await showAlert('Publicación eliminada correctamente', 'Éxito', 'success');
-                    const params = new URLSearchParams(window.location.search);
-                    const categoryId = params.get('categoryId');
-                    window.location.href = `category.html?id=${categoryId}`;
-
-                } else {
-                    await showAlert(data.error || 'No se pudo eliminar la publicación', 'Error', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                await showAlert('Error de conexión', 'Error', 'error');
-            }
+            await deletePost(imageId);
         };
-
 
         menuContainer.appendChild(menuBtn);
         menuContainer.appendChild(dropdown);
-        header.appendChild(menuContainer);
+        postMenuContainer.appendChild(menuContainer);
     }
-
-    body.appendChild(header);
-    descP.appendChild(body);
 }
 
-function toggleDescriptionMenu(imageId) {
-    const dropdown = document.getElementById(`desc-dropdown-${imageId}`);
+function togglePostMenu(imageId) {
+    const dropdown = document.getElementById(`post-dropdown-${imageId}`);
     const isActive = dropdown.classList.contains('show');
 
     closeAllMenus();
 
     if (!isActive) {
         dropdown.classList.add('show');
+    }
+}
+
+// Función para eliminar publicación
+async function deletePost(imageId) {
+    const confirmed = await showConfirm(
+        '¿Eliminar publicación?',
+        'Esta acción eliminará la imagen, comentarios, canciones y likes. No se puede deshacer.',
+        'warning'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(`${API_URL}/api/images/${imageId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            await showAlert('Publicación eliminada correctamente', 'Éxito', 'success');
+            const params = new URLSearchParams(window.location.search);
+            const categoryId = params.get('categoryId');
+            const categoryName = getCategoryName(categoryId);
+            window.location.href = `category.html?id=${categoryId}&name=${categoryName}`;
+        } else {
+            await showAlert(data.error || 'No se pudo eliminar la publicación', 'Error', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        await showAlert('Error de conexión', 'Error', 'error');
+    }
+}
+
+// Abrir modal para editar publicación (solo descripción)
+async function openEditPostModal(imageId, image) {
+    const modal = document.getElementById('edit-post-modal');
+    const descriptionInput = document.getElementById('edit-description');
+    const form = document.getElementById('edit-post-form');
+
+    if (!modal || !descriptionInput || !form) {
+        console.error('Elementos del modal no encontrados');
+        await showAlert('Error al abrir el modal de edición', 'Error', 'error');
+        return;
+    }
+
+    // Cargar descripción actual
+    descriptionInput.value = image.Description || '';
+
+    // Mostrar modal
+    modal.style.display = 'flex';
+
+    // Limpiar event listeners previos (si existen)
+    const newFormHandler = async (e) => {
+        e.preventDefault();
+        await savePostChanges(imageId);
+    };
+
+    // Remover event listener anterior si existe
+    form.removeEventListener('submit', form._submitHandler);
+    // Guardar referencia al nuevo handler
+    form._submitHandler = newFormHandler;
+    // Agregar el nuevo event listener
+    form.addEventListener('submit', newFormHandler);
+
+    // Botón cancelar
+    const cancelBtn = document.getElementById('cancel-edit-post');
+    if (cancelBtn) {
+        cancelBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+
+    // Botón cerrar (X)
+    const closeBtn = document.getElementById('close-edit-modal');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+
+    // Cerrar al hacer clic fuera del modal
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+}
+
+// Guardar cambios de la publicación (solo descripción)
+async function savePostChanges(imageId) {
+    const description = document.getElementById('edit-description').value.trim();
+
+    console.log('Guardando cambios para imagen:', imageId);
+    console.log('Descripción:', description);
+
+    if (!description) {
+        await showAlert('La descripción no puede estar vacía', 'Campo vacío', 'info');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/api/images/${imageId}/description`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            },
+            body: JSON.stringify({ description })
+        });
+
+        console.log('Status de respuesta:', res.status);
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('Error del servidor (texto):', errorText);
+            try {
+                const errorData = JSON.parse(errorText);
+                console.error('Error del servidor (JSON):', errorData);
+                await showAlert(errorData.error || 'Error al actualizar publicación', 'Error', 'error');
+            } catch (e) {
+                await showAlert('Error al actualizar publicación: ' + errorText, 'Error', 'error');
+            }
+            return;
+        }
+
+        const data = await res.json();
+        console.log('Respuesta del servidor:', data);
+
+        await showAlert('Publicación actualizada correctamente', 'Éxito', 'success');
+        document.getElementById('edit-post-modal').style.display = 'none';
+        
+        // Recargar los detalles de la imagen para mostrar los cambios
+        console.log('Recargando detalles de la imagen...');
+        await loadImageDetail(imageId);
+        // También recargar comentarios
+        loadComments(imageId);
+
+    } catch (e) {
+        console.error('Error en savePostChanges:', e);
+        await showAlert('Error de conexión: ' + e.message, 'Error', 'error');
     }
 }
 
