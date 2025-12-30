@@ -905,9 +905,17 @@ window.votar = async (imageId, songId) => {
             body: JSON.stringify({ imageId, songId })
         });
         const data = await res.json();
-        alert(data.message || data.error);
-        if (res.ok) location.reload();
-    } catch (e) { console.error(e); }
+        
+        if (res.ok) {
+            await showAlert(data.message || 'Voto registrado correctamente', 'Éxito', 'success');
+            location.reload();
+        } else {
+            await showAlert(data.error || data.message || 'Error al votar', 'Aviso', 'info');
+        }
+    } catch (e) { 
+        console.error(e);
+        await showAlert('Error de conexión al votar', 'Error', 'error');
+    }
 };
 
 // Cargar estado de likes (para usuarios autenticados)
