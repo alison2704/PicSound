@@ -9,6 +9,7 @@ IF DB_ID('PicsoundDB') IS NOT NULL
 BEGIN
     USE PicsoundDB;
 
+    IF OBJECT_ID('dbo.Notifications', 'U') IS NOT NULL DROP TABLE dbo.Notifications;
     IF OBJECT_ID('dbo.SongVotes',  'U') IS NOT NULL DROP TABLE dbo.SongVotes;
     IF OBJECT_ID('dbo.Comments',   'U') IS NOT NULL DROP TABLE dbo.Comments;
     IF OBJECT_ID('dbo.Likes',      'U') IS NOT NULL DROP TABLE dbo.Likes;
@@ -164,7 +165,23 @@ CREATE TABLE SongVotes
 GO
 
 ---------------------------------------------------------------
--- 11️ Insertar admin SOLO si no existe
+-- 11️ Tabla Notifications
+---------------------------------------------------------------
+CREATE TABLE Notifications
+(
+    NotificationID INT IDENTITY(1,1) PRIMARY KEY,
+    ReceiverID INT NOT NULL REFERENCES Users(UserID) ON DELETE CASCADE,
+    SenderID INT NOT NULL REFERENCES Users(UserID) ON DELETE NO ACTION,
+    ImageID INT NOT NULL REFERENCES Images(ImageID) ON DELETE NO ACTION,
+    Type NVARCHAR(20) NOT NULL CHECK (Type IN ('like', 'comment', 'vote')),
+    CommentText NVARCHAR(MAX) NULL,
+    IsRead BIT NOT NULL DEFAULT 0,
+    CreatedAt DATETIME2 DEFAULT SYSUTCDATETIME()
+);
+GO
+
+---------------------------------------------------------------
+-- 12️ Insertar admin SOLO si no existe
 ---------------------------------------------------------------
 IF NOT EXISTS (SELECT 1
 FROM Users
@@ -183,7 +200,7 @@ END
 GO
 
 ---------------------------------------------------------------
--- 12️ Crear LOGIN solo si NO existe
+-- 13️ Crear LOGIN solo si NO existe
 ---------------------------------------------------------------
 IF NOT EXISTS (SELECT 1
 FROM sys.server_principals
@@ -195,7 +212,7 @@ USE PicsoundDB;
 GO
 
 ---------------------------------------------------------------
--- 13️ Crear USER solo si NO existe
+-- 14️ Crear USER solo si NO existe
 ---------------------------------------------------------------
 IF NOT EXISTS (SELECT 1
 FROM sys.database_principals
@@ -204,7 +221,7 @@ WHERE name = 'picsound_user')
 GO
 
 ---------------------------------------------------------------
--- 14️ Agregar rol si no existe
+-- 15️ Agregar rol si no existe
 ---------------------------------------------------------------
 IF NOT EXISTS (
     SELECT 1

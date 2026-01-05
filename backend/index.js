@@ -768,11 +768,36 @@ app.get('/api/comments/:imageId', async (req, res) => {
 app.post('/api/comments', authenticateToken, async (req, res) => {
     try {
         const pool = await poolPromise;
+        const { imageId, text } = req.body;
+        const userId = req.user.userId;
+
         await pool.request()
-            .input('uid', sql.Int, req.user.userId) // CORREGIDO
-            .input('iid', sql.Int, req.body.imageId)
-            .input('txt', sql.NVarChar, req.body.text)
+            .input('uid', sql.Int, userId)
+            .input('iid', sql.Int, imageId)
+            .input('txt', sql.NVarChar, text)
             .query('INSERT INTO Comments (UserID, ImageID, Content) VALUES (@uid, @iid, @txt)');
+
+        // Obtener el dueño de la imagen para crear notificación
+        const imageOwner = await pool.request()
+            .input('iid', sql.Int, imageId)
+            .query('SELECT UserID FROM Images WHERE ImageID = @iid');
+
+        // Crear notificación solo si el comentario no es del mismo dueño
+        if (imageOwner.recordset.length > 0 && imageOwner.recordset[0].UserID !== userId) {
+            const notifRequest = pool.request()
+                .input('receiver', sql.Int, imageOwner.recordset[0].UserID)
+                .input('sender', sql.Int, userId)
+                .input('imageId', sql.Int, imageId)
+                .input('type', sql.NVarChar, 'comment')
+                .input('commentText', sql.NVarChar, text.substring(0, 100));
+            
+            // Insertar la notificación (permitir duplicados para cada comentario)
+            await notifRequest.query(`
+                INSERT INTO Notifications (ReceiverID, SenderID, ImageID, Type, CommentText) 
+                VALUES (@receiver, @sender, @imageId, @type, @commentText)
+            `);
+        }
+
         res.json({ message: 'Comentario guardado' });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -896,6 +921,24 @@ app.post('/api/vote', authenticateToken, async (req, res) => {
             .input('sid', sql.Int, songId)
             .query('INSERT INTO SongVotes (UserID, ImageID, SongID) VALUES (@uid, @iid, @sid)');
 
+        // Obtener el dueño de la imagen para crear notificación
+        const imageOwner = await pool.request()
+            .input('iid', sql.Int, imageId)
+            .query('SELECT UserID FROM Images WHERE ImageID = @iid');
+
+        // Crear notificación solo si el voto no es del mismo dueño
+        if (imageOwner.recordset.length > 0 && imageOwner.recordset[0].UserID !== userId) {
+            await pool.request()
+                .input('receiver', sql.Int, imageOwner.recordset[0].UserID)
+                .input('sender', sql.Int, userId)
+                .input('imageId', sql.Int, imageId)
+                .input('type', sql.NVarChar, 'vote')
+                .query(`
+                    INSERT INTO Notifications (ReceiverID, SenderID, ImageID, Type) 
+                    VALUES (@receiver, @sender, @imageId, @type)
+                `);
+        }
+
         res.json({ success: true, message: 'Voto registrado exitosamente.' });
 
     } catch (e) {
@@ -975,6 +1018,124 @@ app.get('/api/like-status/:imageId', authenticateToken, async (req, res) => {
     } catch (e) {
         console.error('Error al obtener like status:', e);
         res.status(500).json({ error: 'Error al obtener estado del like' });
+    }
+});
+
+// ==============================================================================
+// RUTAS DE NOTIFICACIONES
+// ==============================================================================
+
+// Obtener notificaciones del usuario
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        
+        const result = await pool.request()
+            .input('userId', sql.Int, req.user.userId)
+            .query(`
+                SELECT 
+                    N.NotificationID,
+                    N.Type,
+                    N.CommentText,
+                    N.IsRead,
+                    N.CreatedAt,
+                    N.ImageID,
+                    U.Username AS SenderUsername,
+                    I.ImageURL
+                FROM Notifications N
+                JOIN Users U ON N.SenderID = U.UserID
+                LEFT JOIN Images I ON N.ImageID = I.ImageID
+                WHERE N.ReceiverID = @userId
+                ORDER BY N.CreatedAt DESC
+            `);
+        
+        res.json(result.recordset);
+    } catch (e) {
+        console.error('Error al obtener notificaciones:', e);
+        res.status(500).json({ error: 'Error al obtener notificaciones' });
+    }
+});
+
+// Obtener conteo de notificaciones no leídas
+app.get('/api/notifications/unread-count', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        
+        const result = await pool.request()
+            .input('userId', sql.Int, req.user.userId)
+            .query(`
+                SELECT COUNT(*) AS unreadCount 
+                FROM Notifications 
+                WHERE ReceiverID = @userId AND IsRead = 0
+            `);
+        
+        res.json({ unreadCount: result.recordset[0].unreadCount });
+    } catch (e) {
+        console.error('Error al obtener conteo de notificaciones:', e);
+        res.status(500).json({ error: 'Error al obtener conteo' });
+    }
+});
+
+// Marcar notificaciones como leídas
+app.put('/api/notifications/mark-read', authenticateToken, async (req, res) => {
+    console.log('[MARK-READ] Recibida petición PUT /api/notifications/mark-read');
+    console.log('[MARK-READ] Body:', req.body);
+    console.log('[MARK-READ] User:', req.user);
+    
+    try {
+        const pool = await poolPromise;
+        const { notificationIds } = req.body;
+
+        if (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0) {
+            console.log('[MARK-READ] Error: Array de IDs inválido');
+            return res.status(400).json({ error: 'Se requiere un array de IDs de notificaciones' });
+        }
+
+        // Crear una tabla temporal con los IDs
+        const request = pool.request();
+        request.input('userId', sql.Int, req.user.userId);
+        
+        // Crear parámetros para cada ID
+        const idParams = notificationIds.map((id, index) => {
+            request.input(`id${index}`, sql.Int, id);
+            return `@id${index}`;
+        }).join(',');
+
+        console.log('[MARK-READ] Ejecutando UPDATE para IDs:', notificationIds);
+
+        // Marcar como leídas solo las notificaciones del usuario
+        const result = await request.query(`
+            UPDATE Notifications 
+            SET IsRead = 1 
+            WHERE ReceiverID = @userId AND NotificationID IN (${idParams})
+        `);
+        
+        console.log('[MARK-READ] Filas afectadas:', result.rowsAffected);
+        res.json({ message: 'Notificaciones marcadas como leídas', updated: result.rowsAffected[0] });
+    } catch (e) {
+        console.error('[MARK-READ] Error al marcar notificaciones:', e);
+        res.status(500).json({ error: 'Error al marcar notificaciones' });
+    }
+});
+
+// Eliminar una notificación
+app.delete('/api/notifications/:id', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const notificationId = req.params.id;
+
+        await pool.request()
+            .input('notifId', sql.Int, notificationId)
+            .input('userId', sql.Int, req.user.userId)
+            .query(`
+                DELETE FROM Notifications 
+                WHERE NotificationID = @notifId AND ReceiverID = @userId
+            `);
+        
+        res.json({ message: 'Notificación eliminada' });
+    } catch (e) {
+        console.error('Error al eliminar notificación:', e);
+        res.status(500).json({ error: 'Error al eliminar notificación' });
     }
 });
 
