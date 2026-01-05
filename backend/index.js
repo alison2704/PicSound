@@ -520,6 +520,10 @@ app.delete('/api/images/:id', authenticateToken, async (req, res) => {
         // Eliminación en orden correcto
         await pool.request()
             .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Notifications WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
             .query('DELETE FROM Likes WHERE ImageID = @imageId');
 
         await pool.request()
@@ -788,8 +792,8 @@ app.post('/api/comments', authenticateToken, async (req, res) => {
                 .input('receiver', sql.Int, imageOwner.recordset[0].UserID)
                 .input('sender', sql.Int, userId)
                 .input('imageId', sql.Int, imageId)
-                .input('type', sql.NVarChar, 'comment')
-                .input('commentText', sql.NVarChar, text.substring(0, 100));
+                .input('type', sql.NVarChar(20), 'comment')
+                .input('commentText', sql.NVarChar(100), text.substring(0, 100));
             
             // Insertar la notificación (permitir duplicados para cada comentario)
             await notifRequest.query(`
@@ -911,6 +915,33 @@ app.post('/api/vote', authenticateToken, async (req, res) => {
                     WHERE UserID = @uid AND ImageID = @iid
                 `);
 
+            // Obtener el dueño de la imagen para crear notificación al cambiar voto
+            const imageOwnerUpdate = await pool.request()
+                .input('iid', sql.Int, imageId)
+                .query('SELECT UserID FROM Images WHERE ImageID = @iid');
+
+            // Crear notificación solo si el voto no es del mismo dueño
+            if (imageOwnerUpdate.recordset.length > 0 && imageOwnerUpdate.recordset[0].UserID !== userId) {
+                console.log('[VOTE CHANGE NOTIFICATION] Creando notificación de cambio de voto:', {
+                    receiver: imageOwnerUpdate.recordset[0].UserID,
+                    sender: userId,
+                    imageId: imageId,
+                    type: 'vote'
+                });
+                
+                await pool.request()
+                    .input('receiver', sql.Int, imageOwnerUpdate.recordset[0].UserID)
+                    .input('sender', sql.Int, userId)
+                    .input('imageId', sql.Int, imageId)
+                    .input('type', sql.NVarChar(20), 'vote')
+                    .query(`
+                        INSERT INTO Notifications (ReceiverID, SenderID, ImageID, Type) 
+                        VALUES (@receiver, @sender, @imageId, @type)
+                    `);
+                
+                console.log('[VOTE CHANGE NOTIFICATION] Notificación creada exitosamente');
+            }
+
             return res.json({ success: true, message: 'Tu voto ha sido cambiado con éxito.' });
         }
 
@@ -928,15 +959,24 @@ app.post('/api/vote', authenticateToken, async (req, res) => {
 
         // Crear notificación solo si el voto no es del mismo dueño
         if (imageOwner.recordset.length > 0 && imageOwner.recordset[0].UserID !== userId) {
+            console.log('[VOTE NOTIFICATION] Creando notificación de voto:', {
+                receiver: imageOwner.recordset[0].UserID,
+                sender: userId,
+                imageId: imageId,
+                type: 'vote'
+            });
+            
             await pool.request()
                 .input('receiver', sql.Int, imageOwner.recordset[0].UserID)
                 .input('sender', sql.Int, userId)
                 .input('imageId', sql.Int, imageId)
-                .input('type', sql.NVarChar, 'vote')
+                .input('type', sql.NVarChar(20), 'vote')
                 .query(`
                     INSERT INTO Notifications (ReceiverID, SenderID, ImageID, Type) 
                     VALUES (@receiver, @sender, @imageId, @type)
                 `);
+            
+            console.log('[VOTE NOTIFICATION] Notificación creada exitosamente');
         }
 
         res.json({ success: true, message: 'Voto registrado exitosamente.' });
@@ -965,12 +1005,37 @@ app.post('/api/like', authenticateToken, async (req, res) => {
                 .input('uid', sql.Int, req.user.userId)
                 .input('iid', sql.Int, imageId)
                 .query('DELETE FROM Likes WHERE UserID = @uid AND ImageID = @iid');
+            
+            // Eliminar notificación de like si existe
+            await pool.request()
+                .input('sender', sql.Int, req.user.userId)
+                .input('imageId', sql.Int, imageId)
+                .input('type', sql.NVarChar(20), 'like')
+                .query('DELETE FROM Notifications WHERE SenderID = @sender AND ImageID = @imageId AND Type = @type');
         } else {
             // Si no existe, agregar like
             await pool.request()
                 .input('uid', sql.Int, req.user.userId)
                 .input('iid', sql.Int, imageId)
                 .query('INSERT INTO Likes (UserID, ImageID) VALUES (@uid, @iid)');
+            
+            // Obtener el dueño de la imagen para crear notificación
+            const imageOwner = await pool.request()
+                .input('iid', sql.Int, imageId)
+                .query('SELECT UserID FROM Images WHERE ImageID = @iid');
+            
+            // Crear notificación solo si el like no es del mismo dueño
+            if (imageOwner.recordset.length > 0 && imageOwner.recordset[0].UserID !== req.user.userId) {
+                await pool.request()
+                    .input('receiver', sql.Int, imageOwner.recordset[0].UserID)
+                    .input('sender', sql.Int, req.user.userId)
+                    .input('imageId', sql.Int, imageId)
+                    .input('type', sql.NVarChar(20), 'like')
+                    .query(`
+                        INSERT INTO Notifications (ReceiverID, SenderID, ImageID, Type) 
+                        VALUES (@receiver, @sender, @imageId, @type)
+                    `);
+            }
         }
 
         // Obtener el conteo actualizado de likes
