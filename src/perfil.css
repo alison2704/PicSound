@@ -31,11 +31,17 @@ nav {
 
 nav .logo {
     font-size: 30px;
-    font-family: 'Merriweather', serif;
+    /* Tamaño del texto "Galeto" */
+    font-family: 'Merriweather';
     font-weight: bold;
-    color: #000000;
+    /* Hace el texto negrita */
     margin: 0;
-    padding: 15px 0;
+    /* Quita márgenes del párrafo */
+    margin-top: 12px;
+    /* Ajusta este valor según lo necesites */
+    color: rgb(0, 0, 0);
+    /* Color blanco para "Galeto" */
+    text-decoration: none;
 }
 
 .nav-links {
@@ -76,6 +82,7 @@ main {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -215,6 +222,7 @@ main {
         transform: translateY(50px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;

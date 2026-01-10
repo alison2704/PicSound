@@ -13,7 +13,7 @@
 <body>
     <header>
         <nav>
-            <p class="logo">PICSOUND ADMIN</p>
+            <a href="index.html" class="logo">PICSOUND ADMIN</a>
             <div style="display: flex; align-items: center; gap: 15px;">
                 <a href="index.html" style="color:  rgb(171, 171, 171);; text-decoration: none;">Inicio</a>
                 <a href="#" id="logout-admin"
@@ -129,19 +129,19 @@
                 const cellId = row.insertCell();
                 cellId.setAttribute('data-label', 'ID');
                 cellId.textContent = user.UserID;
-                
+
                 const cellUsername = row.insertCell();
                 cellUsername.setAttribute('data-label', 'Usuario');
                 cellUsername.textContent = user.Username;
-                
+
                 const cellEmail = row.insertCell();
                 cellEmail.setAttribute('data-label', 'Email');
                 cellEmail.textContent = user.Email;
-                
+
                 const cellFotos = row.insertCell();
                 cellFotos.setAttribute('data-label', 'Fotos Subidas');
                 cellFotos.textContent = user.NumFotos;
-                
+
                 const cellLikes = row.insertCell();
                 cellLikes.setAttribute('data-label', 'Likes Recibidos');
                 cellLikes.textContent = user.LikesRecibidos;
