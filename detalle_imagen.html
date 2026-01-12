@@ -72,24 +72,31 @@
         </div>
     </div>
 
-    <div id="youtube-modal" class="youtube-modal">
-        <div class="youtube-modal-content">
-            <span class="youtube-modal-close" onclick="cerrarModalYoutube()">&times;</span>
-            <div class="youtube-modal-title">
-                <div class="music-icon-circle">
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-                    </svg>
+    <!-- Reproductor de audio inline (se clonará dinámicamente) -->
+    <template id="audio-player-template">
+        <div class="audio-player-inline">
+            <button class="audio-play-btn-inline" data-action="play">
+                <svg viewBox="0 0 24 24" class="play-icon">
+                    <path fill="currentColor" d="M8 5v14l11-7z"/>
+                </svg>
+                <svg viewBox="0 0 24 24" class="pause-icon" style="display: none;">
+                    <path fill="currentColor" d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                </svg>
+            </button>
+            <div class="audio-progress-inline">
+                <div class="audio-time-inline" data-time="current">0:00</div>
+                <div class="audio-progress-container-inline">
+                    <div class="audio-progress-bar-inline"></div>
                 </div>
-                <span id="youtube-modal-title">Reproduciendo canción</span>
+                <div class="audio-time-inline" data-time="total">0:00</div>
             </div>
-            <div class="youtube-iframe-container">
-                <iframe id="youtube-iframe" src=""
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen></iframe>
-            </div>
+            <button class="audio-close-btn-inline" data-action="close">✕</button>
         </div>
+    </template>
+
+    <!-- iframe oculto para YouTube API -->
+    <div style="display: none;">
+        <div id="youtube-player"></div>
     </div>
 
     <!-- Modal para Editar Publicación -->

@@ -289,7 +289,9 @@ async function loadImageDetail(imageId) {
             const listenLink = document.createElement('a');
             listenLink.href = 'javascript:void(0)';
             listenLink.className = 'btn-listen';
-            listenLink.onclick = () => abrirModalYoutube(song.ExternalURL, song.Title);
+            listenLink.onclick = function() { 
+                abrirModalYoutube(song.ExternalURL, song.Title, this); 
+            };
             listenLink.innerHTML = `
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
@@ -1121,13 +1123,44 @@ function updateLikeUI(totalLikes, userLiked) {
     console.log('Contador actualizado a:', likesCount.textContent);
 }
 
+// ==============================================================================
+// REPRODUCTOR DE AUDIO CON YOUTUBE API (INLINE)
+// ==============================================================================
+
+let player;
+let currentVideoId = null;
+let progressInterval = null;
+let currentPlayerContainer = null;
+
 function extraerIdYoutube(url) {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-window.abrirModalYoutube = async function (url, titulo) {
+// Cargar API de YouTube
+function cargarYouTubeAPI() {
+    if (window.YT && window.YT.Player) {
+        return Promise.resolve();
+    }
+    
+    return new Promise((resolve) => {
+        if (!window.onYouTubeIframeAPIReady) {
+            window.onYouTubeIframeAPIReady = () => {
+                resolve();
+            };
+            
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        } else {
+            resolve();
+        }
+    });
+}
+
+window.abrirModalYoutube = async function (url, titulo, buttonElement) {
     const videoId = extraerIdYoutube(url);
 
     if (!videoId) {
@@ -1135,58 +1168,192 @@ window.abrirModalYoutube = async function (url, titulo) {
         return;
     }
 
-    const modal = document.getElementById('youtube-modal');
-    const iframe = document.getElementById('youtube-iframe');
-    const modalTitle = document.getElementById('youtube-modal-title');
+    currentVideoId = videoId;
 
-    // Ocultar botón X y botones de navegación
-    const closeBtn = document.getElementById('close-btn');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
+    // Cargar API de YouTube
+    await cargarYouTubeAPI();
 
-    if (closeBtn) closeBtn.style.display = 'none';
-    if (prevBtn) prevBtn.style.display = 'none';
-    if (nextBtn) nextBtn.style.display = 'none';
+    // Encontrar el contenedor del botón (song-item)
+    const songItem = buttonElement.closest('.song-item');
+    if (!songItem) return;
 
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+    // Si ya hay un reproductor activo, cerrarlo
+    if (currentPlayerContainer) {
+        cerrarReproductor();
+    }
 
-    iframe.src = embedUrl;
-    modalTitle.textContent = titulo;
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-}
+    // Obtener template y clonarlo
+    const template = document.getElementById('audio-player-template');
+    const playerClone = template.content.cloneNode(true);
+    const playerElement = playerClone.querySelector('.audio-player-inline');
 
-window.cerrarModalYoutube = function () {
-    const modal = document.getElementById('youtube-modal');
-    const iframe = document.getElementById('youtube-iframe');
+    // Guardar el botón original para restaurarlo después
+    const originalButton = buttonElement.cloneNode(true);
+    originalButton.onclick = () => abrirModalYoutube(url, titulo, originalButton);
 
-    // Mostrar botón X y botones de navegación nuevamente
-    const closeBtn = document.getElementById('close-btn');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
+    // REEMPLAZAR el botón con el reproductor (no ocultar)
+    buttonElement.replaceWith(playerElement);
 
-    if (closeBtn) closeBtn.style.display = 'flex';
-    if (prevBtn) prevBtn.style.display = 'flex';
-    if (nextBtn) nextBtn.style.display = 'flex';
+    // Guardar referencia al contenedor actual y al botón original
+    currentPlayerContainer = playerElement;
+    currentPlayerContainer._originalButton = originalButton;
 
-    iframe.src = '';
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
+    // Configurar event listeners del reproductor
+    setupPlayerControls(currentPlayerContainer);
 
-window.onclick = function (event) {
-    const modal = document.getElementById('youtube-modal');
-    if (event.target === modal) {
-        cerrarModalYoutube();
+    // Crear o actualizar player
+    if (!player) {
+        player = new YT.Player('youtube-player', {
+            height: '0',
+            width: '0',
+            videoId: videoId,
+            playerVars: {
+                'autoplay': 1,
+                'controls': 0,
+                'rel': 0
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
+        });
+    } else {
+        player.loadVideoById(videoId);
+        player.playVideo();
     }
 }
 
-document.addEventListener('keydown', function (event) {
-    const modal = document.getElementById('youtube-modal');
-    if (modal.style.display === 'block' && event.key === 'Escape') {
-        cerrarModalYoutube();
+function setupPlayerControls(playerContainer) {
+    const playBtn = playerContainer.querySelector('[data-action="play"]');
+    const closeBtn = playerContainer.querySelector('[data-action="close"]');
+    const progressContainer = playerContainer.querySelector('.audio-progress-container-inline');
+
+    // Botón play/pause
+    playBtn.addEventListener('click', () => {
+        if (player) {
+            const state = player.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+            } else {
+                player.playVideo();
+            }
+        }
+    });
+
+    // Botón cerrar
+    closeBtn.addEventListener('click', () => {
+        cerrarReproductor();
+    });
+
+    // Barra de progreso clickeable
+    progressContainer.addEventListener('click', (e) => {
+        if (!player || !player.getDuration) return;
+
+        const rect = progressContainer.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        const percentage = clickX / width;
+        const duration = player.getDuration();
+        const newTime = duration * percentage;
+
+        player.seekTo(newTime, true);
+    });
+}
+
+function onPlayerReady(event) {
+    event.target.playVideo();
+    startProgressUpdate();
+}
+
+function onPlayerStateChange(event) {
+    if (!currentPlayerContainer) return;
+
+    const playBtn = currentPlayerContainer.querySelector('[data-action="play"]');
+    const playIcon = playBtn.querySelector('.play-icon');
+    const pauseIcon = playBtn.querySelector('.pause-icon');
+
+    if (event.data === YT.PlayerState.PLAYING) {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
+        startProgressUpdate();
+    } else if (event.data === YT.PlayerState.PAUSED) {
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+        stopProgressUpdate();
+    } else if (event.data === YT.PlayerState.ENDED) {
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+        stopProgressUpdate();
+        resetProgress();
     }
-});
+}
+
+function startProgressUpdate() {
+    stopProgressUpdate();
+    progressInterval = setInterval(updateProgress, 100);
+}
+
+function stopProgressUpdate() {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+}
+
+function updateProgress() {
+    if (!player || !player.getDuration || !currentPlayerContainer) return;
+
+    const currentTime = player.getCurrentTime();
+    const duration = player.getDuration();
+
+    if (duration > 0) {
+        const progress = (currentTime / duration) * 100;
+        const progressBar = currentPlayerContainer.querySelector('.audio-progress-bar-inline');
+        const currentTimeEl = currentPlayerContainer.querySelector('[data-time="current"]');
+        const totalTimeEl = currentPlayerContainer.querySelector('[data-time="total"]');
+        
+        if (progressBar) progressBar.style.width = progress + '%';
+        if (currentTimeEl) currentTimeEl.textContent = formatTime(currentTime);
+        if (totalTimeEl) totalTimeEl.textContent = formatTime(duration);
+    }
+}
+
+function resetProgress() {
+    if (!currentPlayerContainer) return;
+    
+    const progressBar = currentPlayerContainer.querySelector('.audio-progress-bar-inline');
+    const currentTimeEl = currentPlayerContainer.querySelector('[data-time="current"]');
+    
+    if (progressBar) progressBar.style.width = '0%';
+    if (currentTimeEl) currentTimeEl.textContent = '0:00';
+}
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return mins + ':' + (secs < 10 ? '0' : '') + secs;
+}
+
+function cerrarReproductor() {
+    if (!currentPlayerContainer) return;
+
+    // Obtener el botón original guardado
+    const originalButton = currentPlayerContainer._originalButton;
+    
+    // Reemplazar el reproductor con el botón original
+    if (originalButton) {
+        currentPlayerContainer.replaceWith(originalButton);
+    } else {
+        currentPlayerContainer.remove();
+    }
+    
+    currentPlayerContainer = null;
+    
+    if (player) {
+        player.pauseVideo();
+        stopProgressUpdate();
+    }
+}
 
 // ===============================================================================
 // SISTEMA DE MODALES PERSONALIZADOS
