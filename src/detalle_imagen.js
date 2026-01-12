@@ -346,7 +346,11 @@ function renderImageDescription(image, imageId) {
     // Verificar si el usuario es el dueño de la publicación
     console.log('Comparando user.userId:', user?.userId, 'con image.UserID:', image.UserID);
 
-    if (user && user.userId === image.UserID && postMenuContainer) {
+    const isOwner = user && user.userId === image.UserID;
+    const isAdmin = user && user.role === 'admin';
+
+    // Mostrar menú si es el dueño
+    if (isOwner && postMenuContainer) {
         const menuContainer = document.createElement('div');
         menuContainer.className = 'comment-menu-container';
 
@@ -386,6 +390,22 @@ function renderImageDescription(image, imageId) {
         menuContainer.appendChild(dropdown);
         postMenuContainer.appendChild(menuContainer);
     }
+    
+    // Mostrar botón de basurero si es admin pero NO es el dueño
+    if (isAdmin && !isOwner && postMenuContainer) {
+        const adminDeleteBtn = document.createElement('button');
+        adminDeleteBtn.className = 'admin-delete-post-btn';
+        adminDeleteBtn.title = 'Eliminar publicación (Admin)';
+        adminDeleteBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+        `;
+        adminDeleteBtn.onclick = async () => {
+            await deletePostAsAdmin(imageId, image.UserID);
+        };
+        postMenuContainer.appendChild(adminDeleteBtn);
+    }
 }
 
 function togglePostMenu(imageId) {
@@ -421,6 +441,41 @@ async function deletePost(imageId) {
 
         if (res.ok) {
             await showAlert('Publicación eliminada correctamente', 'Éxito', 'success');
+            const params = new URLSearchParams(window.location.search);
+            const categoryId = params.get('categoryId');
+            const categoryName = getCategoryName(categoryId);
+            window.location.href = `category.html?id=${categoryId}&name=${categoryName}`;
+        } else {
+            await showAlert(data.error || 'No se pudo eliminar la publicación', 'Error', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        await showAlert('Error de conexión', 'Error', 'error');
+    }
+}
+
+// Función para que admin elimine publicación de otro usuario
+async function deletePostAsAdmin(imageId, imageOwnerId) {
+    const confirmed = await showConfirm(
+        '¿Eliminar esta publicación como administrador?',
+        'Esta acción eliminará la publicación de este usuario y le enviará una notificación. No se puede deshacer.',
+        'warning'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(`${API_URL}/api/admin/images/${imageId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            await showAlert('Publicación eliminada correctamente. Se ha notificado al usuario.', 'Éxito', 'success');
             const params = new URLSearchParams(window.location.search);
             const categoryId = params.get('categoryId');
             const categoryName = getCategoryName(categoryId);
@@ -695,7 +750,10 @@ async function loadComments(imageId) {
         // O10H5: Mostrar menú de opciones solo si el comentario pertenece al usuario
         // ==============================================================================
         console.log('Comparando user.userId:', user?.userId, 'con c.UserID:', c.UserID);
-        if (user && user.userId === c.UserID) {
+        const isCommentOwner = user && user.userId === c.UserID;
+        const isAdmin = user && user.role === 'admin';
+
+        if (isCommentOwner) {
             const menuContainer = document.createElement('div');
             menuContainer.className = 'comment-menu-container';
 
@@ -741,6 +799,21 @@ async function loadComments(imageId) {
             menuContainer.appendChild(menuBtn);
             menuContainer.appendChild(dropdown);
             commentHeader.appendChild(menuContainer);
+        } 
+        // Mostrar botón de basurero si es admin pero NO es el dueño del comentario
+        else if (isAdmin && !isCommentOwner) {
+            const adminDeleteBtn = document.createElement('button');
+            adminDeleteBtn.className = 'admin-delete-comment-btn';
+            adminDeleteBtn.title = 'Eliminar comentario (Admin)';
+            adminDeleteBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+            `;
+            adminDeleteBtn.onclick = async () => {
+                await deleteCommentAsAdmin(c.CommentID, c.UserID, imageId);
+            };
+            commentHeader.appendChild(adminDeleteBtn);
         }
 
         commentBody.appendChild(commentHeader);
@@ -889,6 +962,40 @@ async function deleteComment(commentId, imageId) {
         }
     } catch (error) {
         console.error('Error al eliminar comentario:', error);
+        await showAlert('Error al eliminar el comentario', 'Error', 'error');
+    }
+}
+
+// Función para que admin elimine comentario de otro usuario
+async function deleteCommentAsAdmin(commentId, commentOwnerId, imageId) {
+    const confirmed = await showConfirm(
+        '¿Eliminar este comentario como administrador?',
+        'Esta acción eliminará el comentario de este usuario y le enviará una notificación. No se puede deshacer.',
+        'warning'
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/api/admin/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            await showAlert('Comentario eliminado correctamente. Se ha notificado al usuario.', 'Éxito', 'success');
+            loadComments(imageId); // Recargar comentarios
+        } else {
+            await showAlert(data.error || 'Error al eliminar el comentario', 'Error', 'error');
+        }
+    } catch (error) {
+        console.error('Error al eliminar comentario como admin:', error);
         await showAlert('Error al eliminar el comentario', 'Error', 'error');
     }
 }

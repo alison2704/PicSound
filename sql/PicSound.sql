@@ -172,8 +172,8 @@ CREATE TABLE Notifications
     NotificationID INT IDENTITY(1,1) PRIMARY KEY,
     ReceiverID INT NOT NULL REFERENCES Users(UserID) ON DELETE CASCADE,
     SenderID INT NOT NULL REFERENCES Users(UserID) ON DELETE NO ACTION,
-    ImageID INT NOT NULL REFERENCES Images(ImageID) ON DELETE NO ACTION,
-    Type NVARCHAR(20) NOT NULL CHECK (Type IN ('like', 'comment', 'vote')),
+    ImageID INT NULL REFERENCES Images(ImageID) ON DELETE NO ACTION,
+    Type NVARCHAR(30) NOT NULL CHECK (Type IN ('like', 'comment', 'vote', 'admin_delete_post', 'admin_delete_comment')),
     CommentText NVARCHAR(MAX) NULL,
     IsRead BIT NOT NULL DEFAULT 0,
     CreatedAt DATETIME2 DEFAULT SYSUTCDATETIME()

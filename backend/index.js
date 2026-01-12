@@ -1087,6 +1087,132 @@ app.get('/api/like-status/:imageId', authenticateToken, async (req, res) => {
 });
 
 // ==============================================================================
+// RUTAS DE ADMINISTRADOR - ELIMINAR CONTENIDO
+// ==============================================================================
+
+// Admin: Eliminar publicación de cualquier usuario
+app.delete('/api/admin/images/:id', authenticateToken, async (req, res) => {
+    const imageId = req.params.id;
+
+    try {
+        const pool = await poolPromise;
+
+        // Verificar que el usuario es admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acceso denegado. Solo administradores pueden realizar esta acción.' });
+        }
+
+        // Obtener información del dueño de la imagen antes de eliminarla
+        const imageResult = await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query(`
+                SELECT UserID, Description
+                FROM Images
+                WHERE ImageID = @imageId
+            `);
+
+        if (imageResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'Publicación no encontrada' });
+        }
+
+        const imageOwnerId = imageResult.recordset[0].UserID;
+
+        // Eliminación en orden correcto
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Notifications WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Likes WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Comments WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM SongVotes WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM ImageSongs WHERE ImageID = @imageId');
+
+        await pool.request()
+            .input('imageId', sql.Int, imageId)
+            .query('DELETE FROM Images WHERE ImageID = @imageId');
+
+        // Crear notificación para el usuario cuya publicación fue eliminada
+        // Usamos ImageID = NULL ya que la imagen ya no existe
+        await pool.request()
+            .input('receiver', sql.Int, imageOwnerId)
+            .input('sender', sql.Int, req.user.userId)
+            .input('type', sql.NVarChar(20), 'admin_delete_post')
+            .query(`
+                INSERT INTO Notifications (ReceiverID, SenderID, ImageID, Type, CommentText) 
+                VALUES (@receiver, @sender, NULL, @type, 'admin eliminó tu publicación por contenido inadecuado')
+            `);
+
+        res.json({ message: 'Publicación eliminada correctamente por el administrador' });
+
+    } catch (err) {
+        console.error('Error al eliminar publicación como admin:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Admin: Eliminar comentario de cualquier usuario
+app.delete('/api/admin/comments/:commentId', authenticateToken, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const { commentId } = req.params;
+
+        // Verificar que el usuario es admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acceso denegado. Solo administradores pueden realizar esta acción.' });
+        }
+
+        // Obtener información del comentario antes de eliminarlo
+        const commentResult = await pool.request()
+            .input('cid', sql.Int, commentId)
+            .query(`
+                SELECT c.UserID, c.ImageID, i.Description as ImageDescription
+                FROM Comments c
+                LEFT JOIN Images i ON c.ImageID = i.ImageID
+                WHERE c.CommentID = @cid
+            `);
+
+        if (commentResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'Comentario no encontrado' });
+        }
+
+        const commentOwnerId = commentResult.recordset[0].UserID;
+        const imageId = commentResult.recordset[0].ImageID;
+
+        // Eliminar el comentario
+        await pool.request()
+            .input('cid', sql.Int, commentId)
+            .query('DELETE FROM Comments WHERE CommentID = @cid');
+
+        // Crear notificación para el usuario cuyo comentario fue eliminado
+        await pool.request()
+            .input('receiver', sql.Int, commentOwnerId)
+            .input('sender', sql.Int, req.user.userId)
+            .input('imageId', sql.Int, imageId)
+            .input('type', sql.NVarChar(20), 'admin_delete_comment')
+            .query(`
+                INSERT INTO Notifications (ReceiverID, SenderID, ImageID, Type, CommentText) 
+                VALUES (@receiver, @sender, @imageId, @type, 'admin eliminó un comentario de tu publicación por contenido inadecuado')
+            `);
+
+        res.json({ message: 'Comentario eliminado correctamente por el administrador' });
+    } catch (e) {
+        console.error('Error al eliminar comentario como admin:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ==============================================================================
 // RUTAS DE NOTIFICACIONES
 // ==============================================================================
 

@@ -1490,11 +1490,63 @@ body {
 .close-btn:hover {
     color: #262626;
 }
-    box-shadow: 0 4px 12px rgba(122, 137, 147, 0.3);
-}
+   
 
 .custom-modal-btn.ok:hover {
     background: linear-gradient(135deg, #435e47 0%, #7a8993 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(122, 137, 147, 0.4);
+}
+
+/* ==============================================================================
+   BOTONES DE ADMIN PARA ELIMINAR PUBLICACIONES Y COMENTARIOS
+   ============================================================================== */
+
+/* Botón de basurero para eliminar publicación (admin) */
+.admin-delete-post-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ed4956;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+
+.admin-delete-post-btn:hover {
+    background: rgba(237, 73, 86, 0.1);
+    transform: scale(1.1);
+}
+
+.admin-delete-post-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Botón de basurero para eliminar comentario (admin) */
+.admin-delete-comment-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ed4956;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    margin-left: auto;
+}
+
+.admin-delete-comment-btn:hover {
+    background: rgba(237, 73, 86, 0.1);
+    transform: scale(1.15);
+}
+
+.admin-delete-comment-btn svg {
+    width: 18px;
+    height: 18px;
 }

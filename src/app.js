@@ -248,6 +248,12 @@ function createNotificationItem(notif) {
     } else if (notif.Type === 'vote') {
         iconClass = 'vote';
         message = `<strong>${notif.SenderUsername}</strong> votó por una canción en tu foto`;
+    } else if (notif.Type === 'admin_delete_post') {
+        iconClass = 'admin-delete';
+        message = `<strong>${notif.SenderUsername}</strong> ${ 'eliminó tu publicación por contenido inadecuado'}`;
+    } else if (notif.Type === 'admin_delete_comment') {
+        iconClass = 'admin-delete';
+        message = `<strong>${notif.SenderUsername}</strong> ${'eliminó un comentario de tu publicación por contenido inadecuado'}`;
     }
 
     const timeAgo = getTimeAgo(notif.CreatedAt);
@@ -272,7 +278,10 @@ function createNotificationItem(notif) {
             markAsRead([notif.NotificationID]);
         }
         
-        window.location.href = `detalle_imagen.html?id=${notif.ImageID}`;
+        // Si la imagen fue eliminada (notificaciones de admin_delete_post), no redirigir
+        if (notif.ImageID) {
+            window.location.href = `detalle_imagen.html?id=${notif.ImageID}`;
+        }
     });
 
     // Clic en eliminar

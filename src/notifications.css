@@ -157,6 +157,10 @@
     background-color: #ffa502;
 }
 
+.notification-icon.admin-delete {
+    background-color: #e74c3c;
+}
+
 .notification-content {
     flex: 1;
     min-width: 0;
