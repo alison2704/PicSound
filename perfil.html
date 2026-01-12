@@ -241,6 +241,10 @@
                         const imgElement = document.createElement('img');
                         imgElement.src = image.ImageUrl;
                         imgElement.alt = image.Title;
+                        imgElement.style.cursor = 'pointer';
+                        imgElement.addEventListener('click', () => {
+                            window.location.href = `detalle_imagen.html?id=${image.ImageID}`;
+                        });
                         imagesContainer.appendChild(imgElement);
                     });
                 } else {
