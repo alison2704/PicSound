@@ -1,53 +1,333 @@
-# 🎵 Picsound — Conecta recuerdos con sonidos
+# 🎵 Galeto - Plataforma Multimedia
 
-Picsound es una plataforma web donde los usuarios pueden asociar canciones a sus fotos, dando vida a los recuerdos a través de la música.
-Los usuarios registrados podrán subir imágenes, agregar hasta tres canciones, recibir likes, comentarios y votos de otros usuarios.
-Los visitantes no registrados solo podrán visualizar la galería en modo lectura.
+<div align="center">
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Node](https://img.shields.io/badge/node-18.x-green.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![CI](https://img.shields.io/badge/CI-passing-brightgreen.svg)
 
-# Tecnologías utilizadas
-| Área                 | Herramienta                        | Descripción                                                          |
-| -------------------- | ---------------------------------- | -------------------------------------------------------------------- |
-| Frontend             | **Vite + JavaScript + HTML + CSS** | Entorno rápido de desarrollo para interfaces web                     |
-| Backend              | **Node.js + Express**              | Servidor REST para manejar la lógica y conexión con la base de datos |
-| Base de datos        | **SQL Server (MSSQL)**             | Almacena usuarios, imágenes, canciones, comentarios, likes y votos   |
-| Conexión BD          | **mssql (librería Node.js)**       | Permite la comunicación entre Node y SQL Server                      |
-| Variables de entorno | **dotenv**                         | Manejo seguro de credenciales                                        |
-| Seguridad y acceso   | **CORS**                           | Permite la comunicación entre el backend y el frontend               |
+**Conecta tus recuerdos con sonidos - Una plataforma donde las imágenes cobran vida a través de la música**
 
-# Configurar el frontend
+[Características](#características) • [Instalación](#instalación) • [Uso](#uso) • [Testing](#testing) • [Pipeline CI/CD](#pipeline-cicd) • [Documentación](#documentación)
+
+</div>
+
+---
+
+## 📋 Descripción
+
+Galeto es una plataforma web social donde los usuarios pueden asociar canciones a sus fotografías, creando una experiencia multimedia única. Los usuarios registrados pueden subir imágenes, agregar hasta tres canciones por imagen, y recibir likes, comentarios y votos de la comunidad. Los visitantes no registrados pueden navegar la galería en modo solo lectura.
+
+## ✨ Características
+
+### 🔐 Autenticación Segura
+- Registro con validación estricta de email (@gmail, @hotmail, @outlook)
+- Contraseñas hasheadas con bcrypt
+- Autenticación mediante JWT
+- Sistema de roles (user/admin)
+
+### 📸 Gestión de Contenido
+- Subida de imágenes con preview
+- Asociación de hasta 3 canciones por imagen
+- Categorización de publicaciones
+- Carrusel dinámico mediante manipulación del DOM
+
+### 💬 Interacciones Sociales
+- Sistema de likes
+- Comentarios en publicaciones
+- Votación de canciones (máximo 3 votos por usuario)
+- Notificaciones en tiempo real
+
+### 👨‍💼 Panel de Administración
+- Eliminación de contenido de usuarios
+- Notificaciones automáticas a usuarios afectados
+- Control total sobre publicaciones y comentarios
+
+## 🚀 Tecnologías
+
+### Frontend
+- **JavaScript Vanilla** - Sin frameworks, manipulación directa del DOM
+- **CSS3** - Estilos modernos con fuentes Poppins y Merriweather
+- **Vite** - Desarrollo rápido con HMR
+- **Webpack** - Build optimizado para producción
+
+### Backend
+- **Node.js + Express** - Servidor REST en puerto 4000
+- **JWT** - Autenticación stateless
+- **Multer** - Manejo de uploads
+- **bcrypt** - Hashing de contraseñas
+- **CORS** - Seguridad de origen cruzado
+
+### Base de Datos
+- **Microsoft SQL Server (MSSQL)** - Base de datos relacional
+- **mssql** - Driver nativo para Node.js
+
+### Herramientas de Calidad
+- **ESLint** - Linting de código
+- **Prettier** - Formateo consistente
+- **Jest** - Testing unitario
+- **GitHub Actions** - CI/CD automatizado
+
+## 📦 Instalación
+
+### Prerequisitos
+
+- Node.js 18.x o superior
+- SQL Server (local o remoto)
+- npm o yarn
+
+### 1. Clonar el repositorio
+
+```bash
+git clone <url-del-repositorio>
+cd Galeto
 ```
+
+### 2. Instalar dependencias del frontend
+
+```bash
 npm install
-npm run dev
 ```
 
-# Configurar el backend
+### 3. Instalar dependencias del backend
 
-```
+```bash
 cd backend
 npm install
+cd ..
 ```
 
-# Crear la base de datos
+### 4. Configurar la base de datos
 
-* Abre SQL Server Management Studio (SSMS).
-* Ejecuta el script PicSound.sql que se encuentra dentro de la carpeta sql/.
-Esto creará la base de datos PicsoundDB con todas sus tablas y relaciones.
+1. Abre **SQL Server Management Studio (SSMS)**
+2. Ejecuta el script `sql/PicSound.sql` para crear la base de datos `PicsoundDB`
+3. Esto creará todas las tablas y relaciones necesarias
 
-# Configurar variables de entorno
-```
-DB_USER=       # Usuario SQL Server con permisos sobre PicsoundDB
-DB_PASSWORD=                # Contraseña del usuario
-DB_SERVER=localhost         # O tu instancia
+### 5. Configurar variables de entorno
+
+Crea un archivo `.env` en la carpeta `backend/`:
+
+```env
+# Configuración de Base de Datos
+DB_USER=tu_usuario_sql
+DB_PASSWORD=tu_contraseña
+DB_SERVER=localhost
 DB_DATABASE=PicsoundDB
 DB_PORT=1433
-DB_ENCRYPT=false            # Desactiva SSL (para entorno local)
-PORT=4000                   # Puerto del backend
-JWT_SECRET=                # Contraseña segura
+DB_ENCRYPT=false
+
+# Configuración del Servidor
+PORT=4000
+
+# Seguridad
+JWT_SECRET=tu_clave_secreta_super_segura_aqui
 ```
 
+## 🏃‍♂️ Uso
 
-# Ejecutar el backend
+### Desarrollo
+
+#### Iniciar el backend
+```bash
+cd backend
+node index.js
+```
+El servidor estará disponible en `http://localhost:4000`
+
+#### Iniciar el frontend
+```bash
+npm run dev
+```
+La aplicación estará disponible en `http://localhost:5173`
+
+### Producción
+
+#### Generar build de producción
+```bash
+npm run build
+```
+Los archivos optimizados se generarán en la carpeta `/dist`
+
+## 🧪 Testing
+
+### Ejecutar tests
+
+```bash
+# Ejecutar todos los tests
+npm test
+
+# Modo watch (re-ejecuta en cada cambio)
+npm run test:watch
+
+# Generar reporte de cobertura
+npm run test:coverage
+```
+
+### Tests Implementados
+
+1. **validarEmail.test.js** - Validación de emails con dominios permitidos
+2. **jwtToken.test.js** - Almacenamiento y gestión de tokens JWT en localStorage
+
+La cobertura de código se genera en `/coverage` y se puede visualizar en HTML.
+
+## 🔄 Pipeline CI/CD
+
+El proyecto incluye un pipeline automatizado que se ejecuta en cada push o pull request a las ramas `main` o `develop`.
+
+### Flujo del Pipeline
+
+```mermaid
+graph LR
+    A[🔍 Lint] --> B[💅 Format]
+    B --> C[🧪 Test]
+    C --> D[🏗️ Build]
+```
+
+#### Jobs del Pipeline
+
+1. **🔍 Lint** - Verifica calidad del código con ESLint
+2. **💅 Format** - Valida formateo con Prettier
+3. **🧪 Test** - Ejecuta tests unitarios con Jest y genera cobertura
+4. **🏗️ Build** - Genera build de producción con Webpack
+
+Cada job:
+- Depende del anterior (`needs`)
+- Usa Node.js versión 18
+- Ejecuta en Ubuntu
+- Guarda artefactos (coverage, dist)
+
+### Ver el estado del pipeline
+
+El badge de CI en este README muestra el estado actual. También puedes ver los detalles en la pestaña **Actions** de GitHub.
+
+## 🛠️ Comandos Disponibles
+
+### Desarrollo
+```bash
+npm run dev          # Inicia servidor de desarrollo
+npm run preview      # Preview del build
+```
+
+### Calidad de Código
+```bash
+npm run lint         # Verifica el código
+npm run lint:fix     # Corrige problemas automáticamente
+npm run format       # Formatea el código
+npm run format:check # Verifica formateo sin cambiar
+```
+
+### Testing
+```bash
+npm test             # Ejecuta tests
+npm run test:watch   # Modo watch
+npm run test:coverage # Con cobertura
+```
+
+### Build
+```bash
+npm run build        # Build de producción
+```
+
+## 📁 Estructura del Proyecto
+
+```
+Galeto/
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # Pipeline CI/CD
+├── backend/
+│   ├── index.js                # Servidor Express
+│   ├── db.js                   # Configuración MSSQL
+│   ├── .env                    # Variables de entorno (no incluir en repo)
+│   └── uploads/                # Archivos subidos por usuarios
+├── src/
+│   ├── app.js                  # Script principal (index.html)
+│   ├── main.js                 # Login/Registro
+│   ├── category.js             # Categorías
+│   ├── detalle_imagen.js       # Detalle de publicación
+│   ├── slider.js               # Carrusel
+│   └── *.css                   # Estilos
+├── tests/
+│   ├── setup.js                # Configuración Jest
+│   ├── validarEmail.test.js    # Tests validación email
+│   ├── jwtToken.test.js        # Tests JWT localStorage
+│   └── __mocks__/              # Mocks para tests
+├── docs/
+│   ├── README.md               # Documentación detallada
+│   └── ADMIN_DELETE_FEATURE.md # Doc funcionalidad admin
+├── sql/
+│   └── PicSound.sql            # Script creación BD
+├── dist/                       # Build de producción (generado)
+├── .eslintrc.json              # Configuración ESLint
+├── .prettierrc                 # Configuración Prettier
+├── jest.config.js              # Configuración Jest
+├── webpack.config.js           # Configuración Webpack
+├── babel.config.json           # Configuración Babel
+├── package.json                # Dependencias y scripts
+└── README.md                   # Este archivo
+```
+
+## 📚 Documentación
+
+La documentación completa del proyecto se encuentra en la carpeta `/docs`:
+
+- **[Documentación Técnica](docs/README.md)** - Arquitectura, Sprints, API Endpoints
+- **[Funcionalidad Admin](docs/ADMIN_DELETE_FEATURE.md)** - Detalles del panel de administración
+
+## 🔒 Seguridad
+
+- ✅ Contraseñas hasheadas con bcrypt (10 rounds)
+- ✅ Tokens JWT con expiración
+- ✅ Validación de email en frontend y backend
+- ✅ CORS configurado específicamente
+- ✅ Protección contra SQL injection mediante queries parametrizadas
+- ✅ Sistema de roles para control de acceso
+
+## 🤝 Contribución
+
+1. Crea un branch desde `develop`
+2. Realiza tus cambios
+3. Asegúrate de que pase el pipeline:
+   ```bash
+   npm run lint
+   npm run format:check
+   npm test
+   npm run build
+   ```
+4. Crea un Pull Request hacia `develop`
+5. Espera code review y aprobación
+
+## 📝 Sprints de Desarrollo
+
+El proyecto fue desarrollado siguiendo metodología ágil con 5 sprints:
+
+1. **Sprint 1** - Autenticación y Registro
+2. **Sprint 2** - Galería y Publicaciones
+3. **Sprint 3** - Interacciones Sociales
+4. **Sprint 4** - Panel de Administración
+5. **Sprint 5** - Optimización y Testing ✅ (Actual)
+
+Ver [documentación completa de sprints](docs/README.md#sprints-de-desarrollo) para más detalles.
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver archivo LICENSE para más detalles.
+
+## 👥 Autores
+
+Proyecto desarrollado como parte del curso de Construcción y Evolución de Software.
+
+---
+
+<div align="center">
+
+**⭐ Si te gusta este proyecto, dale una estrella en GitHub ⭐**
+
+[Reportar Bug](../../issues) • [Solicitar Feature](../../issues) • [Documentación](docs/README.md)
+
+</div>
+
 ```
 node index.js
 ```
